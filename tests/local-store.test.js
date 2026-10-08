@@ -1,24 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLocalStore } from '../site/src/local-store.js';
+import { createLocalStore, createMemoryStorage } from '../site/src/local-store.js';
 import { describeStoreContract } from './store-contract.js';
 
 describeStoreContract('local store', () => createLocalStore());
 
-/** A stand-in for the browser's localStorage. */
-function fakeBrowserStorage() {
-  /** @type {Map<string, string>} */
-  const items = new Map();
-  return {
-    getItem: (/** @type {string} */ key) => items.get(key) ?? null,
-    setItem: (/** @type {string} */ key, /** @type {string} */ value) => {
-      items.set(key, value);
-    },
-  };
-}
-
 test('local store: data outlives the store when given browser storage', async () => {
-  const storage = fakeBrowserStorage();
+  const storage = createMemoryStorage();
   const before = createLocalStore(storage);
   await before.saveColleagues([{ id: 'c1', alias: 'Captain Flush' }]);
   await before.saveVisits('2026-10', [

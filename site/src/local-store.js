@@ -1,13 +1,5 @@
 /**
- * @typedef {{ id: string, alias: string }} Colleague
- * @typedef {{ id: string, colleagueId: string, startedAt: string, endedAt: string | null }} Visit
- *
- * @typedef {object} Store
- * @property {() => Promise<Colleague[]>} loadColleagues
- * @property {(colleagues: Colleague[]) => Promise<void>} saveColleagues
- * @property {(month: string) => Promise<Visit[]>} loadVisits
- * @property {(month: string, visits: Visit[]) => Promise<void>} saveVisits
- *
+ * @typedef {import('./store.js').Store} Store
  * @typedef {Pick<Storage, 'getItem' | 'setItem'>} KeyValueStorage
  */
 
@@ -15,8 +7,13 @@ const COLLEAGUES_KEY = 'toiletovhell:colleagues';
 /** @param {string} month */
 const visitsKey = (month) => `toiletovhell:visits-${month}`;
 
-/** @returns {KeyValueStorage} */
-function createMemoryStorage() {
+/**
+ * A stand-in for the browser's localStorage that forgets everything when
+ * it is thrown away.
+ *
+ * @returns {KeyValueStorage}
+ */
+export function createMemoryStorage() {
   /** @type {Map<string, string>} */
   const items = new Map();
   return {

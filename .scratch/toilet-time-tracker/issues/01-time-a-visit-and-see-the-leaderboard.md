@@ -4,15 +4,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] One Docker command runs the tests and another serves the local preview; nothing is installed on the host
-- [ ] The operator can add a colleague by typing an alias
-- [ ] Each colleague has a start button that becomes a stop button while their visit is running
-- [ ] A running visit shows a timer that advances every second
-- [ ] Several colleagues can have running visits at once; a colleague can never have two
-- [ ] The current month's leaderboard lists colleagues by total visit time, most first, and counts running visits as they tick
-- [ ] Reloading the page keeps colleagues, finished visits and running visits, and a running visit keeps counting from its original start
-- [ ] Visits are stored per month, by the month they started in according to local time
-- [ ] The tracker's rules are covered by tests that use a fake clock and the local store, with no browser involved
-- [ ] The store port has contract tests that pass against the local adapter
+- [x] One Docker command runs the tests and another serves the local preview; nothing is installed on the host
+- [x] The operator can add a colleague by typing an alias
+- [x] Each colleague has a start button that becomes a stop button while their visit is running
+- [x] A running visit shows a timer that advances every second
+- [x] Several colleagues can have running visits at once; a colleague can never have two
+- [x] The current month's leaderboard lists colleagues by total visit time, most first, and counts running visits as they tick
+- [x] Reloading the page keeps colleagues, finished visits and running visits, and a running visit keeps counting from its original start
+- [x] Visits are stored per month, by the month they started in according to local time
+- [x] The tracker's rules are covered by tests that use a fake clock and the local store, with no browser involved
+- [x] The store port has contract tests that pass against the local adapter

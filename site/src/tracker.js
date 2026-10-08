@@ -1,7 +1,7 @@
 /**
- * @typedef {import('./local-store.js').Colleague} Colleague
- * @typedef {import('./local-store.js').Visit} Visit
- * @typedef {import('./local-store.js').Store} Store
+ * @typedef {import('./store.js').Colleague} Colleague
+ * @typedef {import('./store.js').Visit} Visit
+ * @typedef {import('./store.js').Store} Store
  * @typedef {{ now: () => Date }} Clock
  * @typedef {Awaited<ReturnType<typeof createTracker>>} Tracker
  */
@@ -18,8 +18,14 @@ function monthOf(moment) {
   return `${moment.getFullYear()}-${month}`;
 }
 
+/** @param {Date} moment */
+function monthBefore(moment) {
+  return monthOf(new Date(moment.getFullYear(), moment.getMonth() - 1, 1));
+}
+
 /**
- * Visits are timed in whole seconds.
+ * A moment as a stored instant. Visits are timed in whole seconds, so the
+ * fraction of a second is dropped.
  * @param {Date} moment
  */
 function toInstant(moment) {
@@ -70,7 +76,11 @@ export async function createTracker({ clock, store }) {
     return colleague;
   }
 
-  await visitsIn(monthOf(clock.now()));
+  // A visit can still be running from just before midnight on the last day,
+  // so last month is loaded along with this one.
+  const openedAt = clock.now();
+  await visitsIn(monthOf(openedAt));
+  await visitsIn(monthBefore(openedAt));
 
   return {
     /** @param {string} alias */
@@ -84,12 +94,14 @@ export async function createTracker({ clock, store }) {
     /** @param {string} colleagueId */
     async startVisit(colleagueId) {
       const colleague = colleagueWith(colleagueId);
-      if (runningVisitOf(colleagueId)) {
-        throw new Refused(`${colleague.alias} is already out.`);
-      }
       const now = clock.now();
       const month = monthOf(now);
       const visits = await visitsIn(month);
+      // Nothing may be awaited between this check and the push below, or two
+      // starts at the same moment would both pass it.
+      if (runningVisitOf(colleagueId)) {
+        throw new Refused(`${colleague.alias} is already out.`);
+      }
       visits.push({
         id: crypto.randomUUID(),
         colleagueId,

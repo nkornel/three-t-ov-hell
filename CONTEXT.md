@@ -25,7 +25,7 @@ The one person who records visits by starting and stopping timers.
 _Avoid_: Admin, user
 
 **Visit**:
-One trip to the toilet by one colleague, from the moment they leave to the moment they return. A colleague has at most one running visit; visits by different colleagues may overlap.
+One trip to the toilet by one colleague, from the moment they leave to the moment they return. A colleague with a running visit is out. A colleague has at most one running visit; visits by different colleagues may overlap.
 _Avoid_: Session, break, trip
 
 **Month**:

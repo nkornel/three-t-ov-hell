@@ -187,3 +187,34 @@ test('visits are timed in whole seconds', async () => {
   // Started in second :00 and stopped in second :11.
   assert.equal(tracker.leaderboard()[0].totalSeconds, 11);
 });
+
+test('a visit still running after the month changes survives reopening the app', async () => {
+  // 23:50 on 31 October in Budapest.
+  const { clock, store, tracker } = await setup('2026-10-31T22:50:00Z');
+  const { id } = await tracker.addColleague('Captain Flush');
+  await tracker.startVisit(id);
+
+  clock.advance(20 * 60);
+  const reopened = await createTracker({ clock, store });
+
+  assert.equal(reopened.colleagues()[0].runningVisit?.elapsedSeconds, 1200);
+  await assert.rejects(reopened.startVisit(id), /already out/);
+  await reopened.stopVisit(id);
+  assert.equal(reopened.colleagues()[0].runningVisit, null);
+});
+
+test('two starts at the same moment create only one visit', async () => {
+  const { clock, tracker } = await setup();
+  const { id } = await tracker.addColleague('Captain Flush');
+
+  const outcomes = await Promise.allSettled([tracker.startVisit(id), tracker.startVisit(id)]);
+  clock.advance(30);
+  await tracker.stopVisit(id);
+
+  assert.deepEqual(
+    outcomes.map((outcome) => outcome.status),
+    ['fulfilled', 'rejected'],
+  );
+  assert.equal(tracker.colleagues()[0].runningVisit, null);
+  assert.equal(tracker.leaderboard()[0].totalSeconds, 30);
+});

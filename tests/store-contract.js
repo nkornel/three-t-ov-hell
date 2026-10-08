@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
  * test file with a function that returns a fresh, empty store.
  *
  * @param {string} name
- * @param {() => import('../site/src/local-store.js').Store | Promise<import('../site/src/local-store.js').Store>} createEmptyStore
+ * @param {() => import('../site/src/store.js').Store | Promise<import('../site/src/store.js').Store>} createEmptyStore
  */
 export function describeStoreContract(name, createEmptyStore) {
   const visit = {

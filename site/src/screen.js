@@ -16,6 +16,11 @@ export function formatDuration(totalSeconds) {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+/** @param {{ elapsedSeconds: number } | null} runningVisit */
+function timerText(runningVisit) {
+  return runningVisit ? formatDuration(runningVisit.elapsedSeconds) : '';
+}
+
 /**
  * @template {HTMLElement} T
  * @param {ParentNode} root
@@ -23,9 +28,9 @@ export function formatDuration(totalSeconds) {
  * @returns {T}
  */
 function find(root, selector) {
-  const element = root.querySelector(selector);
-  if (!element) throw new Error(`The page is missing ${selector}`);
-  return /** @type {T} */ (element);
+  const found = root.querySelector(selector);
+  if (!found) throw new Error(`The page is missing ${selector}`);
+  return /** @type {T} */ (found);
 }
 
 /**
@@ -66,13 +71,14 @@ export function mountScreen({ tracker, clock, root }) {
         const running = colleague.runningVisit;
         const row = document.createElement('li');
         row.classList.toggle('running', running !== null);
-        const timer = element('span', 'timer', running ? formatDuration(running.elapsedSeconds) : '');
+        const timer = element('span', 'timer', timerText(running));
         timer.dataset.colleagueId = colleague.id;
-        const button = element('button', '', running ? 'Stop' : 'Start');
+        const action = running ? 'Stop' : 'Start';
+        const button = element('button', '', action);
         button.setAttribute('type', 'button');
-        button.dataset.action = running ? 'stop' : 'start';
+        button.dataset.action = action.toLowerCase();
         button.dataset.colleagueId = colleague.id;
-        button.setAttribute('aria-label', `${running ? 'Stop' : 'Start'} ${colleague.alias}`);
+        button.setAttribute('aria-label', `${action} ${colleague.alias}`);
         row.append(element('span', 'alias', colleague.alias), timer, button);
         return row;
       }),
@@ -85,7 +91,7 @@ export function mountScreen({ tracker, clock, root }) {
     );
     for (const timer of colleagueList.querySelectorAll('.timer')) {
       const visit = running.get(/** @type {HTMLElement} */ (timer).dataset.colleagueId ?? '');
-      timer.textContent = visit ? formatDuration(visit.elapsedSeconds) : '';
+      timer.textContent = timerText(visit ?? null);
     }
   }
 
@@ -117,9 +123,12 @@ export function mountScreen({ tracker, clock, root }) {
     try {
       await command();
     } catch (error) {
-      if (!(error instanceof Refused)) console.error(error);
-      message.textContent =
-        error instanceof Refused ? error.message : 'Something went wrong. Please try again.';
+      if (error instanceof Refused) {
+        message.textContent = error.message;
+      } else {
+        console.error(error);
+        message.textContent = 'Something went wrong. Please try again.';
+      }
     }
     render();
   }
