@@ -1,0 +1,31 @@
+# Every tool runs here; nothing is installed on the host.
+#   docker compose run --rm test        run the tests
+#   docker compose run --rm typecheck   typecheck the site's JavaScript
+#   docker compose up preview           serve the site at http://localhost:8321
+services:
+  test:
+    image: node:22-alpine
+    profiles: [tools]
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+    command: node --test
+
+  typecheck:
+    image: node:22-alpine
+    profiles: [tools]
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+      - npm-cache:/root/.npm
+    command: npx --yes --package typescript@5.6.3 tsc -p jsconfig.json
+
+  preview:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+    ports:
+      - "127.0.0.1:8321:80"
+
+volumes:
+  npm-cache:

@@ -1,0 +1,166 @@
+:root {
+  color-scheme: light dark;
+  --page: #f6f3ec;
+  --panel: #ffffff;
+  --ink: #1d2433;
+  --muted: #667085;
+  --line: #e2ddd1;
+  --accent: #0f766e;
+  --accent-ink: #ffffff;
+  --stop: #b42318;
+  --running: #fff4d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #14171f;
+    --panel: #1d222d;
+    --ink: #eceef2;
+    --muted: #9aa3b2;
+    --line: #2e3542;
+    --accent: #2dd4bf;
+    --accent-ink: #06231f;
+    --stop: #f97066;
+    --running: #3a3115;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 24px 16px 48px;
+  background: var(--page);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+header,
+main {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+#month {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+#message {
+  min-height: 1.5em;
+  margin: 4px 0 12px;
+  color: var(--stop);
+}
+
+main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+section {
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+li.running {
+  background: var(--running);
+}
+
+.alias {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.timer,
+.total,
+.place {
+  font-variant-numeric: tabular-nums;
+}
+
+.place {
+  width: 2ch;
+  color: var(--muted);
+  text-align: right;
+}
+
+.total {
+  font-weight: 600;
+}
+
+button {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button[data-action="stop"] {
+  background: var(--stop);
+  color: #ffffff;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--ink);
+  font: inherit;
+}
+
+section > p {
+  margin: 0;
+  color: var(--muted);
+}

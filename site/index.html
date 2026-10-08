@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Toilet Time Tracker</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="src/main.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Toilet Time Tracker</h1>
+      <p id="message" role="status" aria-live="polite"></p>
+    </header>
+
+    <main>
+      <section aria-labelledby="colleagues-heading">
+        <h2 id="colleagues-heading">Colleagues</h2>
+        <ul id="colleagues"></ul>
+        <p id="no-colleagues" hidden>No colleagues yet. Add the first one below.</p>
+        <form id="add-colleague" autocomplete="off">
+          <label for="alias">Alias</label>
+          <input id="alias" name="alias" required />
+          <button type="submit">Add colleague</button>
+        </form>
+      </section>
+
+      <section aria-labelledby="leaderboard-heading">
+        <h2 id="leaderboard-heading">Leaderboard <span id="month"></span></h2>
+        <ol id="leaderboard"></ol>
+        <p id="no-leaderboard" hidden>Nobody is playing yet.</p>
+      </section>
+    </main>
+  </body>
+</html>
