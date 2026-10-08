@@ -67,7 +67,7 @@ input {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: var(--sp-3) var(--sp-6);
   padding: var(--sp-3) var(--sp-6);
   background: var(--c-bg);
@@ -75,33 +75,15 @@ input {
   border-bottom: var(--bw-2) solid var(--c-shadow);
 }
 
+/* The logo carries the app's name, so the header shows nothing else. */
 .brand {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
+  margin: 0;
+  line-height: 0;
 }
 
 .logo {
   width: auto;
-  height: 72px;
-}
-
-.wordmark {
-  margin: 0;
-  font: 700 var(--fs-xl) / 1 var(--font-display);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.wordmark em {
-  font-style: normal;
-  color: var(--c-accent-ink);
-}
-
-.tagline {
-  margin: var(--sp-1) 0 0;
-  font-size: var(--fs-sm);
-  color: var(--c-text-muted);
+  height: 200px;
 }
 
 /* ---------- layout ---------- */
@@ -595,11 +577,7 @@ td.lb-rank {
   }
 
   .logo {
-    height: 48px;
-  }
-
-  .wordmark {
-    font-size: var(--fs-lg);
+    height: 140px;
   }
 
   .crow {

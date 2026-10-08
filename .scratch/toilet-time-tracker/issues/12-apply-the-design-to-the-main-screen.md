@@ -37,3 +37,5 @@ Three things to know for later tickets:
 - A refused alias is shown beside the field, but the tracker refuses no alias until ticket 05. The path was exercised with a stand-in tracker that refuses one.
 - An idle row keeps an empty line under the alias, which holds the row's height. Ticket 09 fills it with the colleague's visit count.
 - The form still uses the browser's own check for an empty alias. Ticket 05 replaces it with the tracker's refusal.
+
+2026-10-08, later: After seeing the screen in a browser, the maintainer asked for the header to show the logo alone, bigger and centred, with no title or tagline. The third criterion above was met as written and then superseded by this; the spec's Design section now says the same.

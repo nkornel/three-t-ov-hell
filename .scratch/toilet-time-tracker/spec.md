@@ -16,7 +16,7 @@ The operator signs in with Google and sees one screen: every colleague with thei
 
 Colleagues are known only by an alias and a pirate-themed pixel-art avatar chosen from a set of twenty that ships with the app. All data is saved to a folder in the operator's Google Drive that the app creates and is limited to.
 
-On screen the app is called The 3 T's ov Hell and carries its own logo; Toilet Time Tracker is its tagline and the working title of this spec. It has one visual design, a pixel-art look in the spirit of 16-bit pirate adventure games, recorded as an interactive mockup in `design/mockup.html`.
+On screen the app is called The 3 T's ov Hell and carries its own logo; Toilet Time Tracker is only the working title of this spec. It has one visual design, a pixel-art look in the spirit of 16-bit pirate adventure games, recorded as an interactive mockup in `design/mockup.html`.
 
 ## User Stories
 
@@ -101,7 +101,7 @@ On screen the app is called The 3 T's ov Hell and carries its own logo; Toilet T
 
 ### Look and feel
 
-59. As an operator, I want the app to carry its name, The 3 T's ov Hell, and its logo, so that the game has an identity the office recognises.
+59. As an operator, I want the app to show its logo, which carries its name, The 3 T's ov Hell, large at the top of the screen, so that the game has an identity the office recognises.
 60. As a colleague, I want aliases, timers and totals large enough to read from a couple of metres away, so that I can follow the game from my desk.
 61. As an operator, I want the app to follow my system's light or dark setting, so that it suits the screen it runs on.
 62. As an operator, I want an avatar to move only while its colleague is out, so that a glance across the room shows who is away.
@@ -154,7 +154,7 @@ On screen the app is called The 3 T's ov Hell and carries its own logo; Toilet T
 ### Design
 
 - The reference is `design/mockup.html`, an interactive mockup of every screen and state. Its tokens are repeated in `design/tokens.css`. Its sample aliases, avatar tiles and avatar descriptions are placeholders. Where the mockup and this spec disagree, this spec wins; the known differences are listed at the end of this section.
-- On screen the app is called The 3 T's ov Hell: in the header, on the sign-in screen and in the browser tab. The logo, kept as `design/logo.png`, carries the name, and "Toilet Time Tracker" appears only as a tagline.
+- The app is called The 3 T's ov Hell. The logo, kept as `design/logo.png`, carries the name: the header shows the logo alone, large and centred, with no title or tagline in text, and the browser tab shows the name. "Toilet Time Tracker" does not appear on screen.
 - Styling uses the mockup's tokens as CSS custom properties. Components use only the role tokens (`--c-*`), never the raw palette, so the dark theme is a swap of token values. The theme follows the system setting. The header bar is dark in both themes.
 - Each colour has one job. Brass marks the primary action, the leader and the winner. Green marks a colleague who is out: the start button, running timers and the Out tag. Red marks stopping and trouble: the stop button, a visit over thirty minutes, refused input, deletion and a lapsed sign-in. Text and background pairings meet WCAG AA, using the adjusted shades in the tokens.
 - No state is carried by colour alone. Out, over thirty minutes, leading, winner, a taken avatar and refused input each have an icon, a label or a shape as well.
@@ -170,7 +170,7 @@ On screen the app is called The 3 T's ov Hell and carries its own logo; Toilet T
 - The interface says "Change alias" for renaming a colleague and "Signed out" for a lapsed sign-in.
 - The sign-in button is Google's official button, not restyled.
 - Differences from the mockup, decided by the maintainer on 2026-10-08:
-  - The mockup's hourglass seal and "Toilet Time Tracker" wordmark stand in for the logo and the name The 3 T's ov Hell.
+  - The mockup's hourglass seal and "Toilet Time Tracker" wordmark stand in for the logo, which is shown alone, large and centred.
   - Editing a visit takes a date and a time, where the mockup takes a time alone, so that a visit can be moved to another day of the current month.
   - The start of a running visit can be changed without stopping it, where the mockup says "Stop it to edit".
   - The header has no operator address and no sign-out button.

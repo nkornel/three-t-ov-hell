@@ -2,7 +2,7 @@
 
 **What to build:** On the published site the operator signs in with Google and the game lives in their Drive. The first time, the app creates its own folder; after that it loads the colleagues and visits from it and saves every change there immediately, as one colleagues document and one visits document per month. The app can see only the files it created. When a save fails the operator is told that changes are unsaved and the app retries by itself; when the Google session lapses the operator is asked to sign in again and nothing on screen is lost. The local preview keeps working without Google.
 
-**Design:** Follow `design/mockup.html` for the sign-in screen and for the save status in the header, with the differences the spec's Design section lists. The sign-in screen shows the logo and the name The 3 T's ov Hell, and its button is Google's official sign-in button. The header has no operator address and no sign-out button. The save status has three states: "All changes saved"; changes not yet saved and retrying, without a count, a countdown or "Retry now"; and "Signed out", in red, with a "Sign in again" button.
+**Design:** Follow `design/mockup.html` for the sign-in screen and for the save status in the header, with the differences the spec's Design section lists. The sign-in screen shows the logo, which carries the name The 3 T's ov Hell, with no title or tagline in text, and its button is Google's official sign-in button. The header has no operator address and no sign-out button. The save status has three states: "All changes saved"; changes not yet saved and retrying, without a count, a countdown or "Retry now"; and "Signed out", in red, with a "Sign in again" button.
 
 **Blocked by:** 01, 02, 03, 12
 
