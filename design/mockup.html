@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toilet Time Tracker · Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=VT323&display=swap">
+
+<!-- ============================================================
+     DESIGN TOKENS  (copy this block into the app as tokens.css)
+     ============================================================ -->
+<style id="tokens">
+/* ---- Base palette: the six given colours ---- */
+:root {
+  --navy-900:      #111923; /* given: deep navy   */
+  --parchment-200: #E4D5B7; /* given: parchment   */
+  --brass-500:     #C49B4B; /* given: brass       */
+  --blood-700:     #8C2D31; /* given: blood red   */
+  --mint-500:      #32CD7A; /* given: neon green  */
+  --ink-850:       #23222B; /* given: charcoal    */
+
+  /* ---- Derived shades ---- */
+  --parchment-50:  #F4EBD8;  --parchment-100: #E9DDC4;  --parchment-400: #CDBB95;
+  --umber-400:     #8A8270;  --umber-600:     #6B6250;  --umber-700:     #4E4A3E;
+  --brass-200:     #D4AE62;  --brass-300:     #EAD39A;  --brass-600:     #B28838;  --brass-800: #73531A;
+  --mint-100:      #DCEFD9;  --mint-400:      #4ADB8C;  --mint-600:      #2BB86C;  --mint-800:  #0E6B3A;  --mint-950: #15302A;
+  --blood-100:     #F2D6D0;  --blood-300:     #F08A86;  --blood-600:     #A3363B;  --blood-800: #74242A;  --blood-950: #3B1D24;
+  --ink-950:       #05080C;  --ink-900:       #191920;  --ink-800:       #2D2C37;  --ink-700:   #34323F;
+  --ink-600:       #5A5668;  --ink-500:       #6E6878;  --ink-400:       #7D7690;  --sand-400:  #A99E88;  --brass-950: #3A3120;
+
+  /* ---- Type ---- */
+  --font-display: "Pixelify Sans", ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --font-body:    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-digits:  "VT323", ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  --fs-xs:    0.8125rem; /* 13px  small print, table headers      */
+  --fs-sm:    0.9375rem; /* 15px  meta lines, captions             */
+  --fs-md:    1.0625rem; /* 17px  body, buttons                    */
+  --fs-lg:    1.375rem;  /* 22px  aliases (readable at ~2 m)       */
+  --fs-xl:    1.75rem;   /* 28px  panel titles                     */
+  --fs-2xl:   2.5rem;    /* 40px  wordmark                         */
+  --fs-num:   2rem;      /* 32px  VT323 leaderboard totals         */
+  --fs-timer: 3.25rem;   /* 52px  VT323 live timers                */
+  --lh-tight: 1.1;
+  --lh-body:  1.45;
+
+  /* ---- Spacing (4px grid) ---- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* ---- Shape ---- */
+  --r-0: 0;          /* default: square, pixel edges          */
+  --r-1: 2px;        /* inputs only                           */
+  --bw-1: 2px;       /* control borders                       */
+  --bw-2: 3px;       /* panel borders, error borders          */
+  --tap: 44px;       /* minimum target                        */
+  --av-lg: 56px;  --av-md: 40px;  --av-pick: 52px;
+
+  /* ---- Motion ---- */
+  --dur-press: 80ms;
+  --dur-pulse: 1.1s;
+  --ease-pixel: steps(2, jump-none);
+}
+
+/* ---- Light theme roles (default) ---- */
+:root {
+  color-scheme: light;
+  --c-bg:              var(--parchment-200);
+  --c-surface:         var(--parchment-50);
+  --c-surface-sunken:  var(--parchment-100);
+  --c-surface-input:   #FBF6EA;
+  --c-text:            var(--navy-900);
+  --c-text-muted:      var(--umber-700);
+  --c-text-disabled:   var(--umber-400);
+  --c-border-strong:   var(--navy-900);   /* panel frames, button edges */
+  --c-border:          var(--umber-600);  /* inputs, ghost buttons (≥3:1) */
+  --c-divider:         var(--parchment-400); /* decorative row rules */
+  --c-disabled-bg:     var(--parchment-100);
+  --c-accent:          var(--brass-500);  --c-accent-hover: var(--brass-600);
+  --c-on-accent:       var(--navy-900);
+  --c-accent-ink:      var(--brass-800);  /* brass as text */
+  --c-run:             var(--mint-500);   --c-run-hover: var(--mint-600);
+  --c-on-run:          var(--navy-900);
+  --c-run-ink:         var(--mint-800);
+  --c-run-tint:        var(--mint-100);
+  --c-danger:          var(--blood-700);  --c-danger-hover: var(--blood-800);
+  --c-on-danger:       var(--parchment-50);
+  --c-danger-ink:      var(--blood-700);
+  --c-danger-tint:     var(--blood-100);
+  --c-danger-edge:     var(--navy-900);
+  --c-winner-tint:     var(--brass-300);
+  --c-focus:           var(--navy-900);
+  --c-focus-gap:       var(--parchment-50);
+  --c-shadow:          var(--navy-900);
+  --c-overlay:         rgb(17 25 35 / .6);
+  --c-hatch:           rgb(17 25 35 / .45);
+  --shadow-sm: 2px 2px 0 var(--c-shadow);
+  --shadow-md: 4px 4px 0 var(--c-shadow);
+  --shadow-lg: 6px 6px 0 var(--c-shadow);
+}
+
+/* ---- Dark theme roles: follows the system unless forced light ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --c-bg: var(--navy-900); --c-surface: var(--ink-850); --c-surface-sunken: var(--ink-900); --c-surface-input: var(--navy-900);
+    --c-text: var(--parchment-200); --c-text-muted: var(--sand-400); --c-text-disabled: var(--ink-500);
+    --c-border-strong: var(--ink-600); --c-border: var(--ink-400); --c-divider: var(--ink-700); --c-disabled-bg: var(--ink-800);
+    --c-accent: var(--brass-500); --c-accent-hover: var(--brass-200); --c-on-accent: var(--navy-900); --c-accent-ink: var(--brass-500);
+    --c-run: var(--mint-500); --c-run-hover: var(--mint-400); --c-on-run: var(--navy-900); --c-run-ink: var(--mint-500); --c-run-tint: var(--mint-950);
+    --c-danger: var(--blood-700); --c-danger-hover: var(--blood-600); --c-on-danger: var(--parchment-200); --c-danger-ink: var(--blood-300); --c-danger-tint: var(--blood-950); --c-danger-edge: var(--blood-300);
+    --c-winner-tint: var(--brass-950);
+    --c-focus: var(--parchment-200); --c-focus-gap: var(--navy-900);
+    --c-shadow: var(--ink-950); --c-overlay: rgb(5 8 12 / .7); --c-hatch: rgb(228 213 183 / .35);
+    --shadow-sm: 2px 2px 0 var(--c-shadow); --shadow-md: 4px 4px 0 var(--c-shadow); --shadow-lg: 6px 6px 0 var(--c-shadow);
+  }
+}
+/* Forced dark, and .theme-dark for always-dark regions (the header bar) */
+:root[data-theme="dark"], .theme-dark {
+  color-scheme: dark;
+  --c-bg: var(--navy-900); --c-surface: var(--ink-850); --c-surface-sunken: var(--ink-900); --c-surface-input: var(--navy-900);
+  --c-text: var(--parchment-200); --c-text-muted: var(--sand-400); --c-text-disabled: var(--ink-500);
+  --c-border-strong: var(--ink-600); --c-border: var(--ink-400); --c-divider: var(--ink-700); --c-disabled-bg: var(--ink-800);
+  --c-accent: var(--brass-500); --c-accent-hover: var(--brass-200); --c-on-accent: var(--navy-900); --c-accent-ink: var(--brass-500);
+  --c-run: var(--mint-500); --c-run-hover: var(--mint-400); --c-on-run: var(--navy-900); --c-run-ink: var(--mint-500); --c-run-tint: var(--mint-950);
+  --c-danger: var(--blood-700); --c-danger-hover: var(--blood-600); --c-on-danger: var(--parchment-200); --c-danger-ink: var(--blood-300); --c-danger-tint: var(--blood-950); --c-danger-edge: var(--blood-300);
+  --c-winner-tint: var(--brass-950);
+  --c-focus: var(--parchment-200); --c-focus-gap: var(--navy-900);
+  --c-shadow: var(--ink-950); --c-overlay: rgb(5 8 12 / .7); --c-hatch: rgb(228 213 183 / .35);
+  --shadow-sm: 2px 2px 0 var(--c-shadow); --shadow-md: 4px 4px 0 var(--c-shadow); --shadow-lg: 6px 6px 0 var(--c-shadow);
+}
+</style>
+
+<!-- ============================================================
+     COMPONENT STYLES
+     ============================================================ -->
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--c-bg); color: var(--c-text);
+  font: var(--fs-md)/var(--lh-body) var(--font-body);
+}
+button, input, select { font: inherit; color: inherit; }
+.ic { width: 1em; height: 1em; flex: none; fill: currentColor; shape-rendering: crispEdges; vertical-align: -0.125em; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus { outline: none; }
+:focus-visible {
+  outline: 3px solid var(--c-focus); outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--c-focus-gap);
+}
+.digits { font-family: var(--font-digits); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+
+/* ---------- preview toolbar (not part of the design) ---------- */
+.demo-bar {
+  position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6);
+  align-items: center; padding: var(--sp-2) var(--sp-4); font: var(--fs-xs)/1.3 var(--font-body);
+  background: repeating-linear-gradient(-45deg, #fff8 0 6px, #0000 6px 12px), #cfd3d6; color: #111;
+  border-bottom: 2px dashed #111;
+}
+.demo-bar b { text-transform: uppercase; letter-spacing: .06em; }
+.demo-bar fieldset { border: 0; margin: 0; padding: 0; display: flex; gap: 4px; align-items: center; }
+.demo-bar label { display: inline-flex; gap: 4px; align-items: center; padding: 2px 6px; background: #fff; border: 1px solid #111; cursor: pointer; }
+.demo-bar nav { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.demo-bar a { color: #111; }
+.demo-bar :focus-visible { outline: 3px solid #111; box-shadow: 0 0 0 2px #fff; }
+
+/* ---------- app frame & header ---------- */
+.app-frame { container: app / inline-size; margin: 0 auto; transition: max-width .2s; }
+.app-frame.is-narrow { max-width: 390px; border-inline: 3px dashed var(--c-border); }
+.hud {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3) var(--sp-6);
+  padding: var(--sp-3) var(--sp-6); background: var(--c-bg); color: var(--c-text);
+  border-bottom: var(--bw-2) solid var(--ink-950);
+}
+.wordmark { display: flex; align-items: center; gap: var(--sp-3); margin: 0; font: 700 var(--fs-xl)/1 var(--font-display); letter-spacing: .03em; text-transform: uppercase; }
+.wordmark .seal {
+  display: grid; place-items: center; width: 40px; height: 40px; background: var(--c-accent); color: var(--c-on-accent);
+  border: var(--bw-1) solid var(--ink-950); box-shadow: 3px 3px 0 var(--ink-950); font-size: var(--fs-md);
+}
+.wordmark .seal .ic { width: 22px; height: 22px; }
+.wordmark em { font-style: normal; color: var(--c-accent-ink); }
+.hud-right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+.operator { font-size: var(--fs-sm); color: var(--c-text-muted); }
+
+/* ---------- save status ---------- */
+.save {
+  display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 36px; padding: var(--sp-1) var(--sp-3);
+  font: 600 var(--fs-sm)/1.2 var(--font-display); border: var(--bw-1) solid var(--c-border); color: var(--c-text-muted);
+}
+.save .ic { width: 16px; height: 16px; }
+.save[data-state="pending"] { border-style: dashed; border-color: var(--c-accent); color: var(--c-accent-ink); }
+.save[data-state="pending"] .ic { animation: spin 1.6s steps(4) infinite; }
+.save[data-state="expired"] { border: var(--bw-2) solid var(--c-danger-ink); color: var(--c-danger-ink); background: var(--c-danger-tint); }
+.save .link-btn { background: none; border: 0; padding: 2px 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; color: inherit; font: inherit; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- layout ---------- */
+.main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-8); padding: var(--sp-8) var(--sp-6) var(--sp-12); align-items: start; }
+
+/* ---------- panels ---------- */
+.panel { background: var(--c-surface); border: var(--bw-2) solid var(--c-border-strong); box-shadow: var(--shadow-lg); position: relative; }
+.panel-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4); background: var(--c-surface-sunken); border-bottom: var(--bw-2) solid var(--c-border-strong);
+}
+.panel-title { margin: 0; font: 700 var(--fs-xl)/1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.panel-count { font: 600 var(--fs-sm) var(--font-display); color: var(--c-text-muted); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: var(--tap); padding: 0 var(--sp-4); cursor: pointer; white-space: nowrap;
+  font: 600 var(--fs-md)/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase;
+  border: var(--bw-1) solid var(--c-border-strong); border-radius: var(--r-0);
+  background: var(--c-surface); color: var(--c-text); box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-press), box-shadow var(--dur-press);
+}
+.btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
+.btn .ic { width: 16px; height: 16px; }
+.btn-primary { background: var(--c-accent); color: var(--c-on-accent); border-color: var(--c-shadow); }
+.btn-primary:hover:not(:disabled) { background: var(--c-accent-hover); }
+.btn-start { background: var(--c-run); color: var(--c-on-run); border-color: var(--c-shadow); }
+.btn-start:hover { background: var(--c-run-hover); }
+.btn-stop, .btn-danger { background: var(--c-danger); color: var(--c-on-danger); border-color: var(--c-danger-edge); }
+.btn-stop:hover, .btn-danger:hover { background: var(--c-danger-hover); }
+.btn-ghost { background: transparent; border-color: var(--c-border); box-shadow: none; }
+.btn-ghost:hover { background: var(--c-surface-sunken); }
+.btn-sm { min-height: 36px; padding: 0 var(--sp-3); font-size: var(--fs-sm); }
+.btn-timer { width: 8.5rem; min-height: 56px; font-size: var(--fs-lg); }
+.btn-timer .ic { width: 18px; height: 18px; }
+.btn:disabled { background: var(--c-disabled-bg); color: var(--c-text-disabled); border-style: dashed; border-color: var(--c-border); box-shadow: none; cursor: not-allowed; }
+.btn-icon { width: var(--tap); padding: 0; background: transparent; border-color: transparent; box-shadow: none; color: var(--c-text-muted); }
+.btn-icon:hover, .btn-icon[aria-expanded="true"] { border-color: var(--c-border); color: var(--c-text); background: var(--c-surface-sunken); }
+.btn-icon .ic { width: 18px; height: 18px; }
+
+/* ---------- avatar placeholders ---------- */
+.avatar {
+  --size: var(--av-lg);
+  position: relative; display: grid; place-items: center; flex: none;
+  width: var(--size); height: var(--size); border: var(--bw-1) solid var(--ink-950);
+  background: var(--av-bg); color: var(--av-fg); image-rendering: pixelated;
+  box-shadow: inset -4px -4px 0 rgb(0 0 0 / .18), inset 4px 4px 0 rgb(255 255 255 / .18);
+}
+.avatar > svg { width: 56%; height: 56%; fill: currentColor; shape-rendering: crispEdges; }
+.avatar .av-num { position: absolute; right: 2px; bottom: 0; font: 11px/1 var(--font-digits); opacity: .85; }
+.avatar.md { --size: var(--av-md); } .avatar.md .av-num { display: none; }
+.avatar.pk { --size: var(--av-pick); }
+.avatar.xl { --size: 72px; }
+.av-pirate { --av-bg: #C49B4B; --av-fg: #111923; }
+.av-sailor { --av-bg: #3A5A7A; --av-fg: #E4D5B7; }
+.av-zombie { --av-bg: #6E9A72; --av-fg: #111923; }
+.av-voodoo { --av-bg: #6B3A5A; --av-fg: #E4D5B7; }
+.is-out .avatar { animation: bob 0.9s var(--ease-pixel) infinite; }
+@keyframes bob { 50% { transform: translateY(-3px); } }
+
+.av-wrap { position: relative; grid-area: av; }
+.av-badge {
+  position: absolute; top: -8px; right: -8px; display: none; place-items: center; width: 24px; height: 24px;
+  border: var(--bw-1) solid var(--ink-950); background: var(--c-run); color: var(--navy-900);
+}
+.av-badge .ic { width: 14px; height: 14px; }
+
+/* ---------- colleague rows ---------- */
+.clist { list-style: none; margin: 0; padding: 0; }
+.crow {
+  position: relative; display: grid; align-items: center; gap: var(--sp-2) var(--sp-4);
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto; grid-template-areas: "av main timer act more";
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-5); border-bottom: var(--bw-1) solid var(--c-divider);
+}
+.crow:last-child { border-bottom: 0; }
+.crow::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; }
+.crow-main { grid-area: main; min-width: 0; }
+.alias { display: block; font: 600 var(--fs-lg)/var(--lh-tight) var(--font-display); overflow-wrap: break-word; }
+.crow-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); font-size: var(--fs-sm); color: var(--c-text-muted); }
+.crow-timer { grid-area: timer; min-width: 5ch; text-align: right; }
+.timer { font: var(--fs-timer)/0.9 var(--font-digits); font-variant-numeric: tabular-nums; color: var(--c-run-ink); }
+.crow .act { grid-area: act; }
+.crow .more { grid-area: more; }
+.meta-out, .meta-long, .crow-timer > * { display: none; }
+.meta-out, .meta-long { align-items: center; flex-wrap: wrap; gap: 6px; }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; min-height: 22px;
+  font: 700 var(--fs-xs)/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase;
+  border: var(--bw-1) solid currentColor; white-space: nowrap;
+}
+.tag .ic { width: 12px; height: 12px; }
+.tag-run { background: var(--c-run); color: var(--navy-900); border-color: var(--ink-950); }
+.tag-long { background: var(--c-danger); color: var(--c-on-danger); border-color: var(--c-danger-edge); }
+.tag-quiet { color: var(--c-text-muted); border-color: var(--c-border); }
+
+.crow[data-state="out"] { background: var(--c-run-tint); }
+.crow[data-state="out"]::before { background: var(--c-run); }
+.crow[data-state="out"] .meta-out, .crow[data-state="out"] .crow-timer > * { display: inline-flex; }
+.crow[data-state="out"] .meta-idle { display: none; }
+.crow[data-state="out"] .av-badge { display: grid; }
+
+.crow[data-state="long"] { background: var(--c-danger-tint); box-shadow: inset 0 0 0 var(--bw-2) var(--c-danger-ink); }
+.crow[data-state="long"]::before { width: 10px; background: repeating-linear-gradient(-45deg, var(--c-danger-ink) 0 6px, transparent 6px 10px); }
+.crow[data-state="long"] .meta-long, .crow[data-state="long"] .crow-timer > * { display: inline-flex; }
+.crow[data-state="long"] .meta-idle { display: none; }
+.crow[data-state="long"] .timer { color: var(--c-danger-ink); }
+.crow[data-state="long"] .av-badge { display: grid; background: var(--c-danger); color: var(--c-on-danger); border-color: var(--c-danger-edge); }
+.crow[data-state="long"] .tag-long { animation: flash var(--dur-pulse) steps(1) infinite; }
+@keyframes flash { 50% { background: transparent; color: var(--c-danger-ink); } }
+
+/* row menu */
+.menu {
+  position: absolute; right: var(--sp-4); top: calc(100% - var(--sp-3)); z-index: 20; min-width: 220px; padding: var(--sp-1);
+  background: var(--c-surface); border: var(--bw-2) solid var(--c-border-strong); box-shadow: var(--shadow-md); list-style: none; margin: 0;
+}
+.menu[hidden] { display: none; }
+.menu button {
+  display: flex; width: 100%; align-items: center; gap: var(--sp-3); min-height: 40px; padding: 0 var(--sp-3);
+  background: none; border: 0; text-align: left; cursor: pointer; font: 600 var(--fs-md) var(--font-display);
+}
+.menu button:hover { background: var(--c-surface-sunken); }
+.menu .sep { border-top: var(--bw-1) solid var(--c-divider); margin: var(--sp-1) 0; }
+.menu .danger { color: var(--c-danger-ink); }
+
+/* ---------- add-colleague form ---------- */
+.addform { border-top: var(--bw-2) solid var(--c-border-strong); background: var(--c-surface-sunken); padding: var(--sp-4) var(--sp-4) var(--sp-5); }
+.addform h3 { margin: 0 0 var(--sp-3); font: 700 var(--fs-lg)/1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; display: flex; gap: var(--sp-2); align-items: center; }
+.addform-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-6); align-items: start; }
+.field label, .field .label, .picker-label { display: block; margin-bottom: var(--sp-2); font: 700 var(--fs-sm)/1 var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+.input {
+  width: 100%; min-height: 48px; padding: 0 var(--sp-3); font-size: var(--fs-lg);
+  background: var(--c-surface-input); border: var(--bw-1) solid var(--c-border); border-radius: var(--r-1);
+}
+.input:hover { border-color: var(--c-border-strong); }
+.field-foot { display: flex; justify-content: space-between; gap: var(--sp-3); margin-top: var(--sp-2); font-size: var(--fs-sm); color: var(--c-text-muted); }
+.counter { margin-left: auto; font: var(--fs-lg)/1 var(--font-digits); }
+.has-error .input { border: var(--bw-2) solid var(--c-danger-ink); }
+.has-error .counter.over { color: var(--c-danger-ink); font-weight: 700; }
+.field-error { display: flex; gap: var(--sp-2); align-items: flex-start; margin-top: var(--sp-2); color: var(--c-danger-ink); font-weight: 600; font-size: var(--fs-sm); }
+.field-error .ic { width: 16px; height: 16px; margin-top: 2px; }
+.addform .btn-primary { margin-top: var(--sp-4); }
+.notice {
+  display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4);
+  border: var(--bw-2) solid var(--c-border-strong); background: var(--c-surface); font-size: var(--fs-sm);
+}
+.notice .ic { width: 20px; height: 20px; margin-top: 2px; color: var(--c-accent-ink); }
+.notice strong { display: block; font: 700 var(--fs-md) var(--font-display); }
+
+/* avatar picker */
+.picker { display: grid; grid-template-columns: repeat(5, var(--av-pick)); gap: var(--sp-2); }
+.pick { position: relative; padding: 0; background: none; border: 0; cursor: pointer; }
+.pick .avatar { transition: transform var(--dur-press); }
+.pick:hover:not([aria-disabled="true"]) .avatar { transform: translate(-2px, -2px); box-shadow: 2px 2px 0 var(--c-shadow); }
+.pick[aria-checked="true"] .avatar { outline: 4px solid var(--c-accent); outline-offset: 2px; }
+.pick .mark {
+  position: absolute; right: -6px; top: -6px; display: none; place-items: center; width: 22px; height: 22px;
+  border: var(--bw-1) solid var(--ink-950);
+}
+.pick .mark .ic { width: 12px; height: 12px; }
+.pick[aria-checked="true"] .mark.sel { display: grid; background: var(--c-accent); color: var(--navy-900); }
+.pick[aria-disabled="true"] { cursor: not-allowed; }
+.pick[aria-disabled="true"] .avatar { filter: grayscale(1); opacity: .5; }
+.pick[aria-disabled="true"]::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, var(--c-hatch) 0 2px, transparent 2px 7px);
+}
+.pick[aria-disabled="true"] .mark.lock { display: grid; z-index: 1; background: var(--c-surface); color: var(--c-text); border-color: var(--c-border-strong); }
+.picker-legend { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--c-text-muted); }
+.picker-legend span { display: inline-flex; gap: 6px; align-items: center; }
+.picker-legend .ic { width: 12px; height: 12px; }
+.has-error .picker { outline: var(--bw-2) solid var(--c-danger-ink); outline-offset: 6px; }
+
+/* ---------- leaderboard ---------- */
+.monthbar { display: flex; align-items: center; gap: var(--sp-1); position: relative; }
+.month-btn { min-width: 12.5rem; justify-content: space-between; font-size: var(--fs-md); }
+.month-list { right: 0; left: auto; top: calc(100% + 6px); min-width: 300px; max-height: 420px; overflow: auto; }
+.month-list button { justify-content: space-between; }
+.month-list button[aria-current="true"] { background: var(--c-surface-sunken); box-shadow: inset 4px 0 0 var(--c-accent); }
+.month-list .sub { font: 400 var(--fs-xs) var(--font-body); color: var(--c-text-muted); display: inline-flex; gap: 4px; align-items: center; }
+.month-list .sub .ic { width: 12px; height: 12px; }
+
+.lb-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm); border-bottom: var(--bw-1) solid var(--c-divider); color: var(--c-text-muted); }
+.live-dot { width: 10px; height: 10px; background: var(--c-run); border: var(--bw-1) solid var(--ink-950); animation: blink 1.4s steps(1) infinite; }
+@keyframes blink { 60% { opacity: .25; } }
+.lb-banner strong { font: 700 var(--fs-sm) var(--font-display); text-transform: uppercase; letter-spacing: .06em; color: var(--c-text); }
+
+.lb-table { width: 100%; border-collapse: collapse; }
+.lb-table th { padding: var(--sp-2) var(--sp-3); font: 700 var(--fs-xs) var(--font-display); text-transform: uppercase; letter-spacing: .08em; color: var(--c-text-muted); text-align: left; border-bottom: var(--bw-1) solid var(--c-border-strong); }
+.lb-table th.num, .lb-table td.num { text-align: right; }
+.lb-table td { padding: var(--sp-2) var(--sp-3); border-bottom: var(--bw-1) solid var(--c-divider); vertical-align: middle; }
+.lb-table tr:last-child td { border-bottom: 0; }
+.lb-rank { width: 3.2ch; font: var(--fs-num)/1 var(--font-digits); text-align: center !important; }
+.lb-who { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.lb-who .alias { font-size: var(--fs-md); }
+.lb-who .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.lb-total { font: var(--fs-num)/1 var(--font-digits); white-space: nowrap; }
+.lb-small { font: var(--fs-lg)/1 var(--font-digits); white-space: nowrap; color: var(--c-text-muted); }
+.lb-body { container: lb / inline-size; }
+.lb-sub { display: none; font-size: var(--fs-xs); color: var(--c-text-muted); margin-top: 2px; }
+.lb-row.is-running .lb-total { color: var(--c-run-ink); }
+.lb-row.is-leading td:first-child { box-shadow: inset 6px 0 0 var(--c-accent); }
+.tag-leading { color: var(--c-accent-ink); border-style: dashed; }
+.lb-row.is-winner { background: var(--c-winner-tint); }
+.lb-row.is-winner td:first-child { box-shadow: inset 6px 0 0 var(--c-accent-ink); }
+.tag-winner { background: var(--c-accent); color: var(--navy-900); border-color: var(--ink-950); }
+.lb-row.is-zero { color: var(--c-text-muted); }
+.lb-row.is-zero .avatar { opacity: .7; }
+.lb-group td { padding: var(--sp-3) var(--sp-3) var(--sp-1); font: 700 var(--fs-xs) var(--font-display); text-transform: uppercase; letter-spacing: .08em; color: var(--c-text-muted); border-bottom: var(--bw-1) dashed var(--c-divider); }
+
+/* closed / final month */
+.panel.is-closed { background: var(--c-surface-sunken); border-style: double; border-width: 7px; }
+.panel.is-closed .panel-head { background: var(--c-surface); }
+.stamp {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; transform: rotate(-4deg);
+  font: 700 var(--fs-sm)/1 var(--font-display); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--c-accent-ink); border: var(--bw-2) solid var(--c-accent-ink);
+}
+.stamp .ic { width: 14px; height: 14px; }
+.proclaim { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4); padding: var(--sp-4); border-bottom: var(--bw-2) solid var(--c-border-strong); background: var(--c-winner-tint); }
+.proclaim .crown { color: var(--c-accent-ink); width: 32px; height: 32px; }
+.proclaim .title { font: 700 var(--fs-lg)/1.15 var(--font-display); }
+.proclaim > div:has(.title) { flex: 1 1 12rem; min-width: 0; }
+.proclaim .sub { font-size: var(--fs-sm); color: var(--c-text-muted); }
+.proclaim .avs { display: flex; gap: var(--sp-2); }
+.proclaim.none { background: transparent; }
+
+/* ---------- visit list (dialog / sheet) ---------- */
+dialog.sheet { padding: 0; border: 0; background: transparent; color: var(--c-text); max-width: min(900px, calc(100vw - 24px)); width: 100%; }
+dialog.sheet::backdrop { background: var(--c-overlay); }
+.sheet-head { display: flex; align-items: center; gap: var(--sp-3); }
+.sheet-head .panel-title { font-size: var(--fs-lg); }
+.sheet-head .sub { font-size: var(--fs-sm); color: var(--c-text-muted); }
+.sheet-body { padding: var(--sp-4); container: sheet / inline-size; }
+.sheet-body > p { margin: 0 0 var(--sp-3); }
+.vtable { width: 100%; border-collapse: collapse; }
+.vtable th { text-align: left; padding: var(--sp-2); font: 700 var(--fs-xs) var(--font-display); text-transform: uppercase; letter-spacing: .08em; color: var(--c-text-muted); border-bottom: var(--bw-1) solid var(--c-border-strong); }
+.vtable td.date { white-space: nowrap; }
+.vtable td { padding: var(--sp-2); border-bottom: var(--bw-1) solid var(--c-divider); vertical-align: middle; }
+.vtable .t { font: var(--fs-lg)/1 var(--font-digits); white-space: nowrap; }
+.vtable .actions { text-align: right; white-space: nowrap; }
+.vtable .actions .btn + .btn { margin-left: var(--sp-2); }
+.vtable tr.is-editing td { background: var(--c-surface-sunken); }
+.vtable input[type="time"] { min-height: 40px; font: var(--fs-lg)/1 var(--font-digits); padding: 0 var(--sp-2); background: var(--c-surface-input); border: var(--bw-1) solid var(--c-border); border-radius: var(--r-1); }
+.vtable input[aria-invalid="true"] { border: var(--bw-2) solid var(--c-danger-ink); }
+.vtable tr.msg td { padding: 0 var(--sp-2) var(--sp-3); background: var(--c-surface-sunken); }
+.refusal { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3); background: var(--c-danger-tint); border-left: 8px solid var(--c-danger-ink); color: var(--c-text); font-size: var(--fs-sm); }
+.refusal .ic { color: var(--c-danger-ink); width: 18px; height: 18px; margin-top: 1px; }
+.refusal strong { display: block; color: var(--c-danger-ink); font: 700 var(--fs-md) var(--font-display); }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3); border: var(--bw-2) solid var(--c-danger-ink); background: var(--c-surface); }
+.confirm p { margin: 0; font-weight: 600; }
+.vlabel { display: block; font-size: var(--fs-xs); color: var(--c-text-muted); margin-bottom: 2px; }
+
+/* ---------- empty states ---------- */
+.empty { display: grid; justify-items: center; gap: var(--sp-3); padding: var(--sp-10) var(--sp-6); text-align: center; }
+.empty .art { display: grid; place-items: center; width: 88px; height: 88px; border: var(--bw-2) dashed var(--c-border); color: var(--c-accent-ink); background: var(--c-surface-sunken); }
+.empty .art .ic { width: 44px; height: 44px; }
+.empty h3 { margin: 0; font: 700 var(--fs-lg)/1.2 var(--font-display); }
+.empty p { margin: 0; max-width: 36ch; color: var(--c-text-muted); }
+
+/* ---------- sign-in ---------- */
+.signin {
+  min-height: 560px; display: grid; place-items: center; padding: var(--sp-8) var(--sp-4);
+  background:
+    linear-gradient(var(--c-bg) 0 0) padding-box,
+    var(--c-bg);
+  background-image:
+    linear-gradient(90deg, rgb(127 127 127 / .08) 2px, transparent 2px),
+    linear-gradient(rgb(127 127 127 / .08) 2px, transparent 2px);
+  background-size: 24px 24px;
+}
+.signin-card { width: min(440px, 100%); padding: var(--sp-8) var(--sp-6); text-align: center; display: grid; gap: var(--sp-5); justify-items: center; }
+.signin-card .wordmark { flex-direction: column; font-size: var(--fs-2xl); line-height: .95; }
+.signin-card .wordmark .seal { width: 56px; height: 56px; }
+.signin-card p { margin: 0; color: var(--c-text-muted); }
+.parade { display: flex; gap: var(--sp-2); justify-content: center; flex-wrap: wrap; }
+.parade .avatar { animation: bob 1.2s var(--ease-pixel) infinite; }
+.parade .avatar:nth-child(2n) { animation-delay: .6s; }
+.btn-google {
+  min-height: 52px; gap: var(--sp-3); padding: 0 var(--sp-5) 0 var(--sp-2); text-transform: none; letter-spacing: 0;
+  font: 500 var(--fs-md) var(--font-body); background: #FFFFFF; color: #1F1F1F; border: 1px solid #747775; box-shadow: var(--shadow-md);
+}
+.btn-google .g { display: grid; place-items: center; width: 36px; height: 36px; font: 700 20px/1 var(--font-body); color: #1F1F1F; border-right: 1px solid #DADCE0; }
+.signin-foot { font-size: var(--fs-xs); color: var(--c-text-muted); }
+
+/* ---------- gallery & documentation ---------- */
+.doc { padding: var(--sp-10) var(--sp-6); border-top: 6px double var(--c-border-strong); }
+.doc > h2 { margin: 0 0 var(--sp-2); font: 700 var(--fs-2xl)/1 var(--font-display); text-transform: uppercase; }
+.doc > p.lede { margin: 0 0 var(--sp-8); max-width: 70ch; color: var(--c-text-muted); }
+.gsec { margin-bottom: var(--sp-12); }
+.gsec > h3 { margin: 0 0 var(--sp-1); font: 700 var(--fs-xl)/1.1 var(--font-display); }
+.gsec > p { margin: 0 0 var(--sp-5); max-width: 75ch; color: var(--c-text-muted); font-size: var(--fs-sm); }
+.ggrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: var(--sp-8); align-items: start; }
+.ggrid.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); }
+.gitem figcaption { margin-bottom: var(--sp-2); font: 700 var(--fs-sm) var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+.gitem { margin: 0; }
+.gframe { container: app / inline-size; }
+.save-row { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-5); }
+.notes { max-width: 80ch; }
+.notes h4 { font: 700 var(--fs-lg) var(--font-display); margin: var(--sp-6) 0 var(--sp-2); }
+.notes p, .notes li { line-height: 1.55; }
+.tokens-pre { max-height: 520px; overflow: auto; margin: 0; padding: var(--sp-4); background: var(--c-surface-sunken); border: var(--bw-2) solid var(--c-border-strong); font: 13px/1.5 ui-monospace, Consolas, monospace; white-space: pre; }
+.ctable { border-collapse: collapse; width: 100%; font-size: var(--fs-sm); background: var(--c-surface); }
+.ctable th, .ctable td { padding: 6px 10px; border: 1px solid var(--c-divider); text-align: left; vertical-align: middle; }
+.ctable th { font: 700 var(--fs-xs) var(--font-display); text-transform: uppercase; letter-spacing: .06em; background: var(--c-surface-sunken); }
+.ctable td.r { font: var(--fs-lg)/1 var(--font-digits); text-align: right; }
+.sw { display: inline-block; width: 18px; height: 18px; border: 1px solid #0006; vertical-align: -4px; margin-right: 4px; }
+.pair { display: inline-flex; align-items: center; padding: 2px 8px; font-weight: 700; border: 1px solid #0003; }
+.scale-demo { display: grid; gap: var(--sp-2); }
+
+/* ---------- reflow: narrow window ---------- */
+@container app (max-width: 900px) {
+  .main-grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); padding: var(--sp-4) var(--sp-3) var(--sp-10); }
+}
+@container app (max-width: 560px) {
+  .hud { padding: var(--sp-3); }
+  .wordmark { font-size: var(--fs-lg); }
+  .wordmark .seal { width: 32px; height: 32px; }
+  .operator { display: none; }
+  .crow { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "av main more" "av timer act"; padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4); gap: var(--sp-2) var(--sp-3); }
+  .crow-timer { text-align: left; min-width: 0; }
+  .timer { font-size: 2.5rem; }
+  .btn-timer { width: 7.25rem; min-height: 48px; font-size: var(--fs-md); }
+  .avatar { --size: 48px; }
+  .avatar.md { --size: 32px; }
+  .addform-grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); }
+  .picker { grid-template-columns: repeat(5, 48px); }
+  .avatar.pk { --size: 48px; }
+  .lb-table td, .lb-table th { padding-inline: var(--sp-2); }
+  .lb-total { font-size: 1.6rem; }
+  .month-btn { min-width: 0; }
+  .panel-head { padding: var(--sp-3); }
+}
+.vlabel-sm { display: none; font-size: var(--fs-xs); color: var(--c-text-muted); }
+
+@container sheet (max-width: 700px) {
+  .vtable thead { display: none; }
+  .vtable tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px var(--sp-3); padding: var(--sp-2) 0; border-bottom: var(--bw-1) solid var(--c-divider); }
+  .vtable td { border: 0; padding: 2px 4px; }
+  .vtable td.date, .vtable td.actions, .vtable tr.msg td { grid-column: 1 / -1; text-align: left; }
+  .vtable td.date { font-weight: 700; }
+  .vtable tr.msg { border: 0; padding-top: 0; }
+  .vtable .vlabel-sm { display: block; }
+  .vtable input[type="time"] { width: 100%; }
+}
+@container lb (max-width: 700px) {
+  .lb-table .opt2 { display: none; }
+  .lb-sub { display: block; }
+  .lb-sub .sv { display: none; }
+}
+@container lb (max-width: 480px) {
+  .lb-table .opt { display: none; }
+  .lb-sub .sv { display: inline; }
+  .lb-total { font-size: 1.4rem; }
+  .lb-rank { font-size: 1.5rem; width: 2.6ch; }
+  .lb-who { gap: var(--sp-2); }
+  .lb-table td, .lb-table th { padding-inline: 6px; }
+}
+
+@container lb (max-width: 380px) {
+  .lb-who .avatar { display: none; }
+}
+@media (max-width: 480px) { .doc { padding-inline: var(--sp-3); } }
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ ICON SPRITE (16×16 pixel grid) ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 16 16"><path d="M4 2h2v1h2v1h2v1h2v1h1v1h1v2h-1v1h-1v1h-2v1H8v1H6v1H4z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 16 16"><path d="M3 3h10v10H3z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7 1h2v2h1v3h1v3h1v3h1v3H3v-3h1V9h1V6h1V3h1zM7 5v5h2V5zm0 6v2h2v-2z"/></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3 1h10v2h-1v3h-1v1h-1v2h1v1h1v3h1v2H3v-2h1v-3h1V9h1V7H5V6H4V3H3zm3 2v2h1v1h2V5h1V3zm1 8v1H6v1h4v-1H9v-1z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 16 16"><path d="M1 4h2v2h1v1h1V5h1V3h1V2h2v1h1v2h1v2h1V6h1V4h2v8H1zM1 13h14v2H1z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 1h6v1h1v4h-2V3H6v3H4V2h1zM2 6h12v9H2zm5 3v3h2V9z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M13 3h2v2h-1v1h-1v1h-1v1h-1v1h-1v1H9v1H8v1H7v1H6v-1H5v-1H4v-1H3V9H2V7h2v1h1v1h1v1h1V9h1V8h1V7h1V6h1V5h1V4h1z"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 16 16"><path d="M1 7h3v3H1zM6.5 7h3v3h-3zM12 7h3v3h-3z"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 16 16"><path d="M9 2h2v2h-1v1H9v1H8v1H7v2h1v1h1v1h1v1h1v2H9v-1H8v-1H7v-1H6v-1H5V7h1V6h1V5h1V4h1z"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 16 16"><path transform="matrix(-1 0 0 1 16 0)" d="M9 2h2v2h-1v1H9v1H8v1H7v2h1v1h1v1h1v1h1v2H9v-1H8v-1H7v-1H6v-1H5V7h1V6h1V5h1V4h1z"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 16 16"><path transform="rotate(-90 8 8)" d="M9 2h2v2h-1v1H9v1H8v1H7v2h1v1h1v1h1v1h1v2H9v-1H8v-1H7v-1H6v-1H5V7h1V6h1V5h1V4h1z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 16 16"><path d="M11 1h2v1h1v1h1v2h-1v1h-1v1h-1v1h-1v1H9v1H8v1H7v1H6v1H5v1H1v-4h1v-1h1V9h1V8h1V7h1V6h1V5h1V4h1V3h1V2h1z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 1h4v2h4v2H2V3h4zM3 6h10v9H3zm2 2v5h2V8zm4 0v5h2V8z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 16 16"><path d="M1 2h2v2H1zM5 2h10v2H5zM1 7h2v2H1zM5 7h10v2H5zM1 12h2v2H1zM5 12h10v2H5z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 2h14v4H1zM2 7h12v8H2zm4 2v2h4V9z"/></symbol>
+  <symbol id="i-face" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 1h8v1h1v1h1v10h-1v1h-1v1H4v-1H3v-1H2V3h1V2h1zM5 5v2h2V5zm4 0v2h2V5zM5 10v1h1v1h4v-1h1v-1z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 1h7v1h1v1h1v1h1v1h1v1h1v1h1v2h-1v1h-1v1h-1v1h-1v1H9v1H7v-1H6v-1H5v-1H4v-1H3V9H2V8H1zm3 2v2h2V3z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="M2 2h3v1h1v1h1v1h2V4h1V3h1V2h3v3h-1v1h-1v1h-1v2h1v1h1v1h1v3h-3v-1h-1v-1H9v-1H7v1H6v1H5v1H2v-3h1v-1h1V9h1V7H4V6H3V5H2z"/></symbol>
+  <symbol id="i-retry" viewBox="0 0 16 16"><path d="M5 1h6v1h1v1h1V1h2v6H9V5h2V4h-1V3H6v1H5v1H4v6h1v1h1v1h4v-1h1v-1h1V9h2v3h-1v1h-1v1h-1v1H5v-1H4v-1H3v-1H2V4h1V3h1V2h1z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 16 16"><path d="M2 1h2v14H2zM5 2h8v1h1v1h-1v1h-1v1h1v1h1v1H5z"/></symbol>
+  <symbol id="i-wheel" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7 0h2v2h1v1h1V2h2v2h-1v1h1v1h2v2h-2v2h-1v1h1v2h-2v-1h-1v1H9v2H7v-2H6v-1H5v1H3v-2h1v-1H3V8H1V6h2V5h1V4H3V2h2v1h1V2h1zm-1 6v4h4V6z"/></symbol>
+  <!-- avatar placeholder glyphs -->
+  <symbol id="g-skull" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 1h8v1h1v1h1v6h-1v1h-1v1h-1v3H5v-3H4v-1H3V9H2V3h1V2h1zM4 5v3h3V5zm5 0v3h3V5zM7 9v1h2V9zM6 12v1h1v-1zm3 0v1h1v-1z"/></symbol>
+  <symbol id="g-anchor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 1h4v4H9v1h3v2H9v5h2v-1h1v-1h1V9h2v3h-1v1h-1v1h-2v1H5v-1H3v-1H2v-1H1V9h2v1h1v1h1v1h2V8H4V6h3V5H6zm1 1v2h2V2z"/></symbol>
+  <symbol id="g-swords" viewBox="0 0 16 16"><path d="M1 1h3v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v3h-3v-1h-1v-1h-1v-1H9V9H8V8H7V7H6V6H5V5H4V4H3V3H1z"/><path transform="matrix(-1 0 0 1 16 0)" d="M1 1h3v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v3h-3v-1h-1v-1h-1v-1H9V9H8V8H7V7H6V6H5V5H4V4H3V3H1z"/></symbol>
+  <symbol id="g-mask" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 0h1v2H4zM7 0h2v2H7zM11 0h1v2h-1zM3 2h10v1h1v9h-1v2h-2v1H5v-1H3v-2H2V3h1zM4 6v2h3V6zm5 0v2h3V6zM6 10v2h4v-2z"/></symbol>
+</svg>
+
+<!-- ============ PREVIEW CONTROLS (not part of the app) ============ -->
+<div class="demo-bar" role="region" aria-label="Design preview controls">
+  <b>Preview</b>
+  <fieldset><legend class="sr-only">Theme</legend>
+    Theme:
+    <label><input type="radio" name="theme" value="system" checked> System</label>
+    <label><input type="radio" name="theme" value="light"> Light</label>
+    <label><input type="radio" name="theme" value="dark"> Dark</label>
+  </fieldset>
+  <fieldset><legend class="sr-only">Width</legend>
+    Width:
+    <label><input type="radio" name="width" value="wide" checked> Desktop</label>
+    <label><input type="radio" name="width" value="narrow"> Narrow (390px)</label>
+  </fieldset>
+  <fieldset><legend class="sr-only">Save status</legend>
+    Save status:
+    <label><input type="radio" name="save" value="saved" checked> Saved</label>
+    <label><input type="radio" name="save" value="pending"> Retrying</label>
+    <label><input type="radio" name="save" value="expired"> Signed out</label>
+  </fieldset>
+  <nav aria-label="Sections"><a href="#main">Main screen</a><a href="#states">States</a><a href="#tokens-doc">Tokens</a><a href="#contrast">Contrast</a><a href="#notes">Notes</a></nav>
+</div>
+
+<!-- ============ MAIN SCREEN ============ -->
+<div class="app-frame" id="main">
+  <header class="hud theme-dark">
+    <h1 class="wordmark"><span class="seal" aria-hidden="true"><svg class="ic"><use href="#i-hourglass"/></svg></span><span>Toilet <em>Time</em> Tracker</span></h1>
+    <div class="hud-right">
+      <div id="save-slot"></div>
+      <span class="operator">Operator · operator@example.com</span>
+      <button class="btn btn-ghost btn-sm" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main class="main-grid">
+    <section class="panel" aria-labelledby="colleagues-h" id="colleagues-panel"></section>
+    <section class="panel" aria-labelledby="lb-h" id="lb-panel"></section>
+  </main>
+</div>
+
+<div id="announcer" class="sr-only" aria-live="polite"></div>
+<dialog class="sheet" id="dlg" aria-labelledby="dlg-title"></dialog>
+
+<!-- ============ STATES GALLERY ============ -->
+<div class="doc" id="states">
+  <h2>States</h2>
+  <p class="lede">Every state from the brief, rendered from the same components as the main screen. These frames are frozen snapshots; the live versions are interactive above (start/stop, the ⋯ menu, the add form, the month selector and the visit list all work).</p>
+
+  <section class="gsec">
+    <h3>Colleague row: idle, out, out for over 30 minutes</h3>
+    <p>Out = mint tint, side bar, hourglass badge, “Out” tag, live timer and a gently bobbing avatar. Over 30 minutes = red frame, striped bar, alert badge, a flashing “Over 30 min” tag and a question that prompts the operator. Start and Stop keep the same width and position so the click target never moves.</p>
+    <div class="ggrid wide"><div class="gframe panel" inert><ul class="clist" id="g-rows"></ul></div></div>
+  </section>
+
+  <section class="gsec">
+    <h3>Add colleague: refused alias</h3>
+    <p>The alias field keeps what was typed and explains the refusal in words, with an icon and a thicker red border as the non-colour cues. The counter turns red past 30 rather than silently cutting pasted text.</p>
+    <div class="ggrid" id="g-add"></div>
+  </section>
+
+  <section class="gsec">
+    <h3>Avatar picker and “all avatars taken”</h3>
+    <p>Taken avatars are greyed, hatched and carry a lock badge; the selected one gets a brass frame and a check badge. When all twenty are taken the form explains why nobody can be added and how to free an avatar.</p>
+    <div class="ggrid" id="g-picker"></div>
+  </section>
+
+  <section class="gsec">
+    <h3>Leaderboard: current month vs closed months</h3>
+    <p>The current month says “in progress”, shows a blinking live marker and a dashed, outline-only “Leading” tag. Closed months switch to a double frame, a “Final” stamp with a lock, a winner banner, filled “Winner” tags with a crown, and no live elements.</p>
+    <div class="ggrid" id="g-months"></div>
+  </section>
+
+  <section class="gsec">
+    <h3>Visit list: editing, refused edits, delete confirmation</h3>
+    <p>Opened from a colleague’s ⋯ menu. Edits happen in place; a refused edit keeps the typed times, marks the offending field and explains the rule in a sentence.</p>
+    <div class="ggrid wide" id="g-visits"></div>
+  </section>
+
+  <section class="gsec">
+    <h3>Sign-in</h3>
+    <p>The first screen. Uses the theme the system asks for, like the rest of the app.</p>
+    <div class="ggrid wide"><div class="gframe panel" inert id="g-signin"></div></div>
+  </section>
+
+  <section class="gsec">
+    <h3>Save status</h3>
+    <p>Lives in the header bar, which stays dark in both themes. Saved is quiet; retrying is brass and dashed with a slowly turning icon (noticeable, not alarming); signed out is the only red state and offers the fix.</p>
+    <div class="ggrid"><div class="gframe panel theme-dark" inert style="background:var(--c-bg)"><div class="save-row" id="g-save"></div></div></div>
+  </section>
+
+  <section class="gsec">
+    <h3>Empty states</h3>
+    <div class="ggrid" id="g-empty"></div>
+  </section>
+</div>
+
+<!-- ============ TOKENS & CONTRAST ============ -->
+<div class="doc" id="tokens-doc">
+  <h2>Design tokens</h2>
+  <p class="lede">This is the exact <code>&lt;style id="tokens"&gt;</code> block from the head of this file. Lift it out as <code>tokens.css</code>. Components use only the <code>--c-*</code> role tokens, never the raw palette, so the dark theme is a pure token swap.</p>
+  <pre class="tokens-pre" id="tokens-pre"></pre>
+</div>
+
+<div class="doc" id="contrast">
+  <h2>Contrast</h2>
+  <p class="lede">WCAG 2.x ratios for every text/background pairing the design relies on. AA needs 4.5:1 for normal text, 3:1 for large text and UI component boundaries.</p>
+  <div style="overflow:auto"><table class="ctable" id="ctable"></table></div>
+</div>
+
+<div class="doc notes" id="notes">
+  <h2>Design notes</h2>
+
+  <h4>How the six colours are used</h4>
+  <ul>
+    <li><strong>Navy #111923</strong> is the ink of the light theme and the page of the dark one. It also draws every chunky frame and hard drop shadow, which is where the 16-bit feel comes from (no blur anywhere).</li>
+    <li><strong>Parchment #E4D5B7</strong> is the light-theme page and the dark-theme text. Panels sit on a lighter derived parchment (#F4EBD8) so they lift off the page without needing a soft shadow.</li>
+    <li><strong>Charcoal #23222B</strong> is the dark-theme panel surface, with a darker #191920 for sunken areas such as panel heads and the add form.</li>
+    <li><strong>Brass #C49B4B</strong> means “honour and primary action”: the Add colleague button, the selected avatar, the leading marker and the winner. It never means running or warning.</li>
+    <li><strong>Neon green #32CD7A</strong> means “out right now”: the Start button, running timers, the Out tag and the live marker. Nothing else is green, so a glance across the room finds who is out.</li>
+    <li><strong>Blood red #8C2D31</strong> means “stop or something is wrong”: the Stop button, the over-30-minute state, refused input, delete and the signed-out status. It is never decorative.</li>
+  </ul>
+
+  <h4>What changed for contrast</h4>
+  <ul>
+    <li><strong>Brass as text</strong> on light parchment is only 2.18:1, so in the light theme brass text uses a darkened <code>#73531A</code> (5.94:1 on panels). Brass fills keep the original shade, with navy text on top (6.85:1).</li>
+    <li><strong>Neon green as text</strong> on parchment is 1.75:1. In the light theme timers and running totals use <code>#0E6B3A</code> (5.57:1); the bright green stays as a fill behind navy text (8.55:1). In the dark theme the original green is fine as text (7.6:1).</li>
+    <li><strong>Blood red as text</strong> on charcoal is 1.90:1, so the dark theme uses <code>#F08A86</code> for red text and error borders (6.50:1). The red stays as the Stop button fill with parchment text (5.72:1), and in dark mode the button gets a #F08A86 edge so its outline still reads against charcoal.</li>
+    <li><strong>Muted text</strong> is a derived umber (#4E4A3E light, #A99E88 dark), at least 5.9:1 everywhere it appears. Disabled text is deliberately lower and is always paired with a dashed border and the not-allowed cursor.</li>
+  </ul>
+
+  <h4>Readability from two metres</h4>
+  <p>Aliases are 22px Pixelify Sans, live timers 52px and leaderboard totals 32px in VT323. VT323 is monospaced, so digits keep the same width as they tick and nothing jiggles; <code>font-variant-numeric: tabular-nums</code> covers the system fallback. Both fonts come from one Google Fonts stylesheet link, with a system stack if it fails to load. Body copy stays in the system font because pixel fonts tire the eye in sentences.</p>
+
+  <h4>Choices made where the brief was open</h4>
+  <ul>
+    <li><strong>The month selector belongs to the leaderboard only.</strong> The colleagues panel always shows today, so the operator can keep timing while looking back at September. Closed months are therefore read-only by construction; visit lists opened while a closed month is shown should open read-only too (no Edit/Delete).</li>
+    <li><strong>Rows never reorder in the colleagues panel.</strong> They are alphabetical and stay put when someone goes out, so the button under the operator’s pointer is always the one they aimed at. Only the leaderboard re-sorts live.</li>
+    <li><strong>Timer formats.</strong> Live timers read like a stopwatch (34:50, then 1:04:10 past an hour). Totals and longest visits always show all three units (2h 16m 02s), so columns line up.</li>
+    <li><strong>Ties</strong> use standard competition ranking (1, 2, 3=, 3=, 5) with an “=” after the shared rank. Colleagues with no time sit under a “No time yet” divider with a dash instead of a rank.</li>
+    <li><strong>A running visit counts immediately</strong> toward total, visit count and longest visit, which is what makes the leaderboard tick.</li>
+    <li><strong>No avatar is preselected</strong> in the add form, so choosing one is deliberate; submitting without one shows an error on the picker.</li>
+    <li><strong>The alias field has no hard maxlength.</strong> A counter turns red past 30 and the form refuses with an explanation, instead of silently truncating pasted text.</li>
+    <li><strong>Archived colleagues</strong> still appear on past leaderboards, tagged “Archived” (see the March 2026 data in the month selector).</li>
+    <li><strong>The header bar is always dark</strong>, in both themes. It gives the app a game-HUD feel and keeps the save status in a consistent place against a consistent background.</li>
+    <li><strong>Avatars animate only while that colleague is out.</strong> Twenty idle-animating figures on a screen used all day would be tiring; motion then doubles as a “who’s out” cue from across the room. With reduced motion all avatars hold a still frame, the over-30 tag stops flashing and the retry icon stops turning; every state keeps its static cues.</li>
+    <li><strong>Avatar descriptions</strong> (“Tricorn captain”, “Drowned helmsman”…) are placeholders used as accessible labels; swap in the real art’s descriptions.</li>
+  </ul>
+
+  <h4>Things I’d suggest changing in the brief</h4>
+  <ul>
+    <li><strong>“Session expired” conflicts with the vocabulary list</strong>, which bans “session”. The design says “Signed out” instead (“Signed out · changes waiting · Sign in again”). Likewise “rename” contains the banned “name”, so the menu says “Change alias”.</li>
+    <li><strong>Consider auto-stopping or a one-tap fix for forgotten visits.</strong> The over-30 state shouts, but if the operator is away the visit keeps growing and decides the month. An “Ended earlier?” action in that row that opens the edit with the end time focused would make the correction one step.</li>
+    <li><strong>Sign in with Google:</strong> the button here is a neutral placeholder. Use Google’s official button asset and logo in production; their branding rules don’t allow restyling it into the pixel look.</li>
+    <li><strong>Pixel avatars at 40–56px:</strong> ask the illustrator to draw on a 16 or 32 pixel grid so the art scales by whole multiples (2×, 3×) with <code>image-rendering: pixelated</code>; odd sizes blur flat pixel art.</li>
+  </ul>
+</div>
+
+<script>
+/* =========================================================
+   Helpers
+   ========================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const icon = (n, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+function fmtTotal(s) { s = Math.max(0, Math.floor(s)); return `${Math.floor(s / 3600)}h ${pad(Math.floor(s / 60) % 60)}m ${pad(s % 60)}s`; }
+function fmtTimer(s) { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${pad(m)}:${pad(s % 60)}`; }
+function fmtClockSecs(t) { return `${pad(Math.floor(t / 3600))}:${pad(Math.floor(t / 60) % 60)}:${pad(t % 60)}`; }
+function fmtClockDate(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function parseClock(v) { const p = (v || '').split(':').map(Number); if (p.length < 2 || p.some(isNaN)) return null; return p[0] * 3600 + p[1] * 60 + (p[2] || 0); }
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+let uid = 0; const nextId = p => `${p}-${++uid}`;
+
+/* =========================================================
+   Avatars (placeholders)
+   ========================================================= */
+const AV_THEMES = { pirate: 'g-swords', sailor: 'g-anchor', zombie: 'g-skull', voodoo: 'g-mask' };
+const AVATARS = [
+  ['pirate', 'Tricorn captain'], ['pirate', 'Peg-leg buccaneer'], ['pirate', 'Parrot-shouldered mate'], ['pirate', 'Eyepatch gunner'], ['pirate', 'Cutlass quartermaster'],
+  ['sailor', 'Striped deckhand'], ['sailor', 'Lighthouse keeper'], ['sailor', 'Bosun with a whistle'], ['sailor', 'Bearded navigator'], ['sailor', 'Cabin cook'],
+  ['zombie', 'Barnacled skeleton'], ['zombie', 'Ghostly first mate'], ['zombie', 'Seaweed corsair'], ['zombie', 'Rattling cannoneer'], ['zombie', 'Drowned helmsman'],
+  ['voodoo', 'Bone-rattle priestess'], ['voodoo', 'Swamp root doctor'], ['voodoo', 'Tiki mask dancer'], ['voodoo', 'Candlelit fortune teller'], ['voodoo', 'Doll-maker hermit']
+].map(([theme, title], i) => ({ id: i + 1, theme, title }));
+function avatarHTML(id, size = '', decorative = false) {
+  const a = AVATARS[id - 1];
+  const label = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Avatar: ${esc(a.title)}"`;
+  return `<span class="avatar av-${a.theme} ${size}" ${label}><svg aria-hidden="true"><use href="#${AV_THEMES[a.theme]}"/></svg><span class="av-num" aria-hidden="true">${pad(a.id)}</span></span>`;
+}
+
+/* =========================================================
+   Sample data
+   ========================================================= */
+const NOW0 = Date.now();
+const MONTH_LABEL = 'October 2026';
+const DAYS = ['2026-10-01', '2026-10-02', '2026-10-05', '2026-10-06', '2026-10-07'];
+const dayLabel = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+function genVisits(total, count, longest, seed) {
+  if (!count) return [];
+  const r = rng(seed); const durs = [longest]; let rest = total - longest;
+  const w = Array.from({ length: count - 1 }, () => 0.4 + r());
+  const ws = w.reduce((a, b) => a + b, 0);
+  w.forEach((x, i) => { durs.push(i === w.length - 1 ? rest - durs.slice(1).reduce((a, b) => a + b, 0) : Math.min(longest - 30, Math.round(rest * x / ws))); });
+  for (let i = durs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [durs[i], durs[j]] = [durs[j], durs[i]]; }
+  const byDay = {}; durs.forEach((d, i) => { const day = DAYS[Math.floor(i * DAYS.length / durs.length)]; (byDay[day] ||= []).push(d); });
+  const out = [];
+  Object.keys(byDay).sort().forEach(day => {
+    let t = 9 * 3600 + Math.floor(r() * 2400);
+    byDay[day].forEach(d => { out.push({ id: nextId('v'), day, start: t, end: t + d }); t += d + 1500 + Math.floor(r() * 3600); });
+  });
+  return out;
+}
+
+let colleagues = [
+  ['Captain Spreadsheet', 1, 8045, 19, 1300, 0],
+  ['Barnacle Bess', 6, 7110, 17, 1082, 372],
+  ['Doubloon Dave', 2, 0, 0, 0, 0],
+  ['Gunpowder Greta', 4, 6072, 12, 1450, 2090],
+  ['Madame Mojo', 16, 4364, 11, 725, 0],
+  ['Mr. Bones', 14, 1323, 3, 598, 0],
+  ['Salty Sven', 8, 2899, 6, 707, 0],
+  ['The Quiet Kraken', 12, 4364, 9, 930, 0]
+].map(([alias, avatar, total, count, longest, outFor], i) => ({
+  id: nextId('c'), alias, avatar,
+  visits: genVisits(total, count, longest, 11 + i * 7),
+  outSince: outFor ? NOW0 - outFor * 1000 : null
+}));
+const byAlias = () => colleagues.sort((a, b) => a.alias.localeCompare(b.alias));
+byAlias();
+
+function stats(c, now = Date.now()) {
+  const done = c.visits.map(v => v.end - v.start);
+  const run = c.outSince ? (now - c.outSince) / 1000 : 0;
+  const all = c.outSince ? [...done, run] : done;
+  return { total: all.reduce((a, b) => a + b, 0), visits: all.length, longest: all.length ? Math.max(...all) : 0, running: !!c.outSince, run };
+}
+
+/* Past months */
+const MONTHS = [];
+for (let i = 11; i >= 0; i--) { const d = new Date(2026, 9 - i, 1); MONTHS.push({ key: `${d.getFullYear()}-${pad(d.getMonth() + 1)}`, label: d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) }); }
+const CURRENT = '2026-10';
+const roster = [...colleagues.map(c => ({ alias: c.alias, avatar: c.avatar })), { alias: 'Admiral Inbox', avatar: 9, archived: true }];
+const PAST = {};
+MONTHS.slice(0, 11).forEach((m, mi) => {
+  const r = rng(100 + mi * 13);
+  const rows = roster.filter(p => !(p.archived && m.key >= '2026-04') && !(p.alias === 'Doubloon Dave' && m.key < '2026-08')).map(p => {
+    const zero = r() < 0.08; const total = zero ? 0 : Math.round(3000 + r() * 12000);
+    const visits = total ? Math.max(2, Math.round(total / (380 + r() * 260))) : 0;
+    return { ...p, total, visits, longest: total ? Math.round(Math.min(total, 500 + r() * 1400)) : 0 };
+  });
+  if (m.key === '2026-07') rows.forEach(x => { x.total = 0; x.visits = 0; x.longest = 0; });
+  const max = Math.max(...rows.map(x => x.total));
+  if (m.key === '2026-09') { const cap = rows.find(x => x.alias === 'Captain Spreadsheet'); cap.total = max + 523; cap.visits = 31; cap.longest = 1987; }
+  if (m.key === '2026-08') { rows.filter(x => x.alias === 'Gunpowder Greta' || x.alias === 'Madame Mojo').forEach(x => { x.total = max + 300; }); }
+  PAST[m.key] = rows;
+});
+
+/* =========================================================
+   Ranking
+   ========================================================= */
+function rankRows(rows) {
+  const s = [...rows].sort((a, b) => b.total - a.total || a.alias.localeCompare(b.alias));
+  let rank = 0, prev = null;
+  s.forEach((x, i) => {
+    if (x.total <= 0) { x.rank = null; return; }
+    if (x.total !== prev) { rank = i + 1; prev = x.total; }
+    x.rank = rank;
+  });
+  s.forEach(x => { x.tied = x.rank && s.filter(y => y.rank === x.rank).length > 1; });
+  return s;
+}
+
+/* =========================================================
+   Components
+   ========================================================= */
+function rowState(c, now) { if (!c.outSince) return 'idle'; return (now - c.outSince) / 1000 >= 1800 ? 'long' : 'out'; }
+
+function timerBtnHTML(c) {
+  return c.outSince
+    ? `${icon('stop')}<span>Stop</span>`
+    : `${icon('play')}<span>Start</span>`;
+}
+function colleagueRowHTML(c, now = Date.now()) {
+  const st = stats(c, now); const state = rowState(c, now);
+  const since = c.outSince ? fmtClockDate(new Date(c.outSince)) : '';
+  return `<li class="crow ${c.outSince ? 'is-out' : ''}" data-id="${c.id}" data-state="${state}">
+    <div class="av-wrap">${avatarHTML(c.avatar)}<span class="av-badge" aria-hidden="true">${icon(state === 'long' ? 'alert' : 'hourglass')}</span></div>
+    <div class="crow-main">
+      <span class="alias">${esc(c.alias)}</span>
+      <span class="crow-meta">
+        <span class="meta-idle">${st.visits ? `${st.visits} visit${st.visits > 1 ? 's' : ''} in ${MONTH_LABEL.split(' ')[0]}` : 'No visits this month'}</span>
+        <span class="meta-out"><span class="tag tag-run">${icon('hourglass')}Out</span> since <span class="since">${since}</span></span>
+        <span class="meta-long"><span class="tag tag-long">${icon('alert')}Over 30 min</span> Still out? Press stop if they’re back.</span>
+      </span>
+    </div>
+    <div class="crow-timer"><span class="timer" role="timer" aria-label="Time out">${c.outSince ? fmtTimer(st.run) : ''}</span></div>
+    <button class="btn btn-timer act ${c.outSince ? 'btn-stop' : 'btn-start'}" type="button" data-act="toggle"
+      aria-label="${c.outSince ? 'Stop the visit for ' : 'Start a visit for '}${esc(c.alias)}">${timerBtnHTML(c)}</button>
+    <button class="btn btn-icon more" type="button" data-act="menu" aria-haspopup="menu" aria-expanded="false" aria-label="More for ${esc(c.alias)}">${icon('dots')}</button>
+    <ul class="menu" role="menu" hidden>
+      <li role="none"><button role="menuitem" type="button" data-act="visits">${icon('list')}Visits</button></li>
+      <li role="none"><button role="menuitem" type="button" data-act="alias">${icon('tag')}Change alias</button></li>
+      <li role="none"><button role="menuitem" type="button" data-act="avatar">${icon('face')}Change avatar</button></li>
+      <li role="none" class="sep"></li>
+      <li role="none"><button role="menuitem" type="button" data-act="archive" class="danger">${icon('archive')}Archive</button></li>
+    </ul>
+  </li>`;
+}
+
+function pickerHTML({ taken = new Map(), selected = null, group = nextId('pk'), error = '' }) {
+  return `<div class="picker-wrap ${error ? 'has-error' : ''}">
+    <span class="picker-label" id="${group}-l">Avatar</span>
+    <div class="picker" role="radiogroup" aria-labelledby="${group}-l" ${error ? `aria-describedby="${group}-e"` : ''}>
+      ${AVATARS.map(a => {
+        const who = taken.get(a.id); const sel = selected === a.id;
+        const tab = sel || (!selected && !who && a.id === [...AVATARS].find(x => !taken.has(x.id))?.id) ? 0 : -1;
+        return `<button type="button" class="pick" role="radio" data-av="${a.id}" aria-checked="${sel}" ${who ? 'aria-disabled="true"' : ''} tabindex="${tab}"
+          title="${esc(a.title)}${who ? ' · taken by ' + esc(who) : ''}" aria-label="${esc(a.title)}${who ? ', taken by ' + esc(who) : ''}">
+          ${avatarHTML(a.id, 'pk', true)}<span class="mark sel" aria-hidden="true">${icon('check')}</span><span class="mark lock" aria-hidden="true">${icon('lock')}</span></button>`;
+      }).join('')}
+    </div>
+    ${error ? `<div class="field-error" id="${group}-e">${icon('alert')}<span>${esc(error)}</span></div>` : ''}
+    <div class="picker-legend" aria-hidden="true"><span>${icon('check')}Selected</span><span>${icon('lock')}Taken</span></div>
+  </div>`;
+}
+
+function aliasFieldHTML({ value = '', error = '', fid = nextId('alias'), disabled = false }) {
+  const n = [...value].length;
+  return `<div class="field ${error ? 'has-error' : ''}">
+    <label for="${fid}">Alias</label>
+    <input class="input" id="${fid}" name="alias" autocomplete="off" spellcheck="false" value="${esc(value)}" ${disabled ? 'disabled' : ''}
+      ${error ? `aria-invalid="true" aria-describedby="${fid}-e ${fid}-c"` : `aria-describedby="${fid}-c"`} placeholder="e.g. Captain Spreadsheet">
+    ${error ? `<div class="field-error" id="${fid}-e">${icon('alert')}<span>${esc(error)}</span></div>` : ''}
+    <div class="field-foot"><span>Shown on the leaderboard. Up to 30 characters.</span><span class="counter digits ${n > 30 ? 'over' : ''}" id="${fid}-c" aria-live="polite">${n}/30</span></div>
+  </div>`;
+}
+
+function addFormHTML(o = {}) {
+  const taken = o.taken || new Map(colleagues.map(c => [c.avatar, c.alias]));
+  if (taken.size >= 20) {
+    return `<form class="addform" aria-labelledby="add-h-${o.k || 'x'}" novalidate>
+      <h3 id="add-h-${o.k || 'x'}">${icon('plus')}Add colleague</h3>
+      <div class="notice" role="status">${icon('lock')}<div><strong>All twenty avatars are taken</strong>Nobody else can be added right now. Archive a colleague to free up their avatar.</div></div>
+      <div class="addform-grid">${aliasFieldHTML({ disabled: true })}${pickerHTML({ taken })}</div>
+      <button class="btn btn-primary" type="submit" disabled>${icon('plus')}Add colleague</button>
+    </form>`;
+  }
+  return `<form class="addform" aria-labelledby="add-h-${o.k || 'x'}" novalidate data-form="add">
+    <h3 id="add-h-${o.k || 'x'}">${icon('plus')}Add colleague</h3>
+    <div class="addform-grid">
+      ${aliasFieldHTML({ value: o.value || '', error: o.error || '' })}
+      ${pickerHTML({ taken, selected: o.selected ?? null, error: o.avError || '' })}
+    </div>
+    <button class="btn btn-primary" type="submit">${icon('plus')}Add colleague</button>
+  </form>`;
+}
+
+function colleaguesPanelHTML(list, now, opts = {}) {
+  const head = `<div class="panel-head"><h2 class="panel-title" id="colleagues-h${opts.k || ''}">Colleagues</h2><span class="panel-count">${list.length} active · ${list.filter(c => c.outSince).length} out</span></div>`;
+  const body = list.length
+    ? `<ul class="clist">${list.map(c => colleagueRowHTML(c, now)).join('')}</ul>`
+    : `<div class="empty"><div class="art">${icon('wheel')}</div><h3>No colleagues aboard yet</h3><p>Add the first colleague below: give them an alias and pick an avatar. Their start button appears here.</p></div>`;
+  return head + body + addFormHTML({ k: opts.k || 'main', taken: opts.taken });
+}
+
+function statusFor(key) {
+  if (key === CURRENT) return { kind: 'live' };
+  const ranked = rankRows(PAST[key]);
+  if (!ranked.length || ranked[0].total <= 0) return { kind: 'none' };
+  const w = ranked.filter(x => x.rank === 1);
+  return { kind: w.length > 1 ? 'tie' : 'winner', winners: w };
+}
+
+function lbRowsFor(key, now) {
+  if (key === CURRENT) return colleagues.map(c => { const s = stats(c, now); return { alias: c.alias, avatar: c.avatar, total: s.total, visits: s.visits, longest: s.longest, running: s.running }; });
+  return PAST[key];
+}
+
+function lbBodyHTML(key, now) {
+  const closed = key !== CURRENT; const ranked = rankRows(lbRowsFor(key, now));
+  const label = MONTHS.find(m => m.key === key).label;
+  if (!ranked.some(x => x.total > 0)) {
+    return closed
+      ? `<div class="empty"><div class="art">${icon('lock')}</div><h3>No visits in ${label}</h3><p>Nobody was timed this month, so there is no winner.</p></div>`
+      : `<div class="empty"><div class="art">${icon('flag')}</div><h3>The leaderboard is empty</h3><p>No visits yet this month. The first colleague to step out takes the lead.</p></div>`;
+  }
+  const row = x => {
+    const cls = ['lb-row', x.running && 'is-running', x.total <= 0 && 'is-zero', !closed && x.rank === 1 && 'is-leading', closed && x.rank === 1 && 'is-winner'].filter(Boolean).join(' ');
+    const tags = [
+      closed && x.rank === 1 ? `<span class="tag tag-winner">${icon('crown')}${statusFor(key).kind === 'tie' ? 'Joint winner' : 'Winner'}</span>` : '',
+      !closed && x.rank === 1 ? `<span class="tag tag-leading">${icon('flag')}Leading</span>` : '',
+      x.running ? `<span class="tag tag-run">${icon('hourglass')}Out</span>` : '',
+      x.archived ? `<span class="tag tag-quiet">${icon('archive')}Archived</span>` : ''
+    ].join('');
+    return `<tr class="${cls}">
+      <td class="lb-rank digits">${x.rank ? `${x.rank}${x.tied ? '<span aria-hidden="true">=</span><span class="sr-only"> (tied)</span>' : ''}` : '<span aria-label="No rank">–</span>'}</td>
+      <td><div class="lb-who">${avatarHTML(x.avatar, 'md')}<div><span class="alias">${esc(x.alias)}</span>${tags ? `<div class="tags">${tags}</div>` : ''}
+        <div class="lb-sub">${x.visits ? `<span class="sv">${x.visits} visit${x.visits === 1 ? '' : 's'} · </span>longest ${fmtTotal(x.longest)}` : 'No visits yet'}</div></div></div></td>
+      <td class="num lb-total">${fmtTotal(x.total)}</td>
+      <td class="num lb-small opt">${x.visits}</td>
+      <td class="num lb-small opt opt2">${fmtTotal(x.longest)}</td>
+    </tr>`;
+  };
+  const withTime = ranked.filter(x => x.total > 0), none = ranked.filter(x => x.total <= 0);
+  return `<table class="lb-table">
+    <caption class="sr-only">Leaderboard for ${label}</caption>
+    <thead><tr><th scope="col" class="lb-rank">Rank</th><th scope="col">Colleague</th><th scope="col" class="num">Total</th><th scope="col" class="num opt">Visits</th><th scope="col" class="num opt opt2">Longest</th></tr></thead>
+    <tbody>${withTime.map(row).join('')}
+      ${none.length ? `<tr class="lb-group"><td colspan="5">No time yet</td></tr>${none.map(row).join('')}` : ''}</tbody></table>`;
+}
+
+function monthListHTML(sel) {
+  return MONTHS.slice().reverse().map(m => {
+    const st = statusFor(m.key);
+    const sub = st.kind === 'live' ? `<span class="sub"><span class="live-dot" aria-hidden="true"></span>In progress</span>`
+      : st.kind === 'none' ? `<span class="sub">${icon('lock')}No winner</span>`
+      : st.kind === 'tie' ? `<span class="sub">${icon('crown')}${st.winners.length} joint winners</span>`
+      : `<span class="sub">${icon('crown')}${esc(st.winners[0].alias)}</span>`;
+    return `<li role="none"><button type="button" role="menuitemradio" aria-checked="${m.key === sel}" aria-current="${m.key === sel}" data-month="${m.key}"><span>${m.label}</span>${sub}</button></li>`;
+  }).join('');
+}
+
+function lbPanelHTML(key, now, opts = {}) {
+  const closed = key !== CURRENT; const m = MONTHS.find(x => x.key === key); const idx = MONTHS.indexOf(m); const st = statusFor(key);
+  const k = opts.k || '';
+  let banner;
+  if (!closed) banner = `<div class="lb-banner"><span class="live-dot" aria-hidden="true"></span><strong>In progress</strong><span>Totals update live. The winner is announced when the month ends.</span></div>`;
+  else {
+    const stamp = `<span class="stamp">${icon('lock')}Final</span>`;
+    if (st.kind === 'none') banner = `<div class="proclaim none">${stamp}<div><div class="title">No winner</div><div class="sub">${m.label} is closed with no visits.</div></div></div>`;
+    else banner = `<div class="proclaim">${icon('crown', 'crown')}<div class="avs">${st.winners.map(w => avatarHTML(w.avatar)).join('')}</div>
+      <div><div class="title">${st.kind === 'tie' ? 'Joint winners: ' + st.winners.map(w => esc(w.alias)).join(' &amp; ') : esc(st.winners[0].alias) + ' wins'}</div>
+      <div class="sub">${m.label} · ${fmtTotal(st.winners[0].total)}${st.kind === 'tie' ? ' each' : ''} · month closed</div></div>${stamp}</div>`;
+  }
+  return `<div class="panel-head"><h2 class="panel-title" id="lb-h${k}">Leaderboard</h2>
+      <div class="monthbar">
+        <button class="btn btn-icon" type="button" data-act="prev" aria-label="Previous month" ${idx === 0 ? 'disabled' : ''}>${icon('chev-l')}</button>
+        <button class="btn btn-ghost month-btn" type="button" data-act="months" aria-haspopup="menu" aria-expanded="false"><span>${closed ? icon('lock') + ' ' : ''}${m.label}</span>${icon('chev-d')}</button>
+        <button class="btn btn-icon" type="button" data-act="next" aria-label="Next month" ${idx === MONTHS.length - 1 ? 'disabled' : ''}>${icon('chev-r')}</button>
+        <ul class="menu month-list" role="menu" aria-label="Month" hidden>${monthListHTML(key)}</ul>
+      </div></div>
+    ${banner}<div class="lb-body">${lbBodyHTML(key, now)}</div>`;
+}
+
+function saveHTML(state) {
+  if (state === 'pending') return `<div class="save" data-state="pending" role="status">${icon('retry')}<span>2 changes not saved yet · retrying in 8 s</span><button type="button" class="link-btn">Retry now</button></div>`;
+  if (state === 'expired') return `<div class="save" data-state="expired" role="alert">${icon('alert')}<span>Signed out · changes waiting</span><button type="button" class="btn btn-danger btn-sm">Sign in again</button></div>`;
+  return `<div class="save" data-state="saved" role="status">${icon('check')}<span>All changes saved</span></div>`;
+}
+
+/* Visit list */
+function visitsSheetHTML(c, vs = {}, now = Date.now()) {
+  const st = stats(c, now);
+  const rows = [...c.visits].sort((a, b) => b.day.localeCompare(a.day) || b.start - a.start);
+  const rowHTML = v => {
+    const dur = v.end - v.start;
+    if (vs.editId === v.id) {
+      const d = vs.draft || { start: fmtClockSecs(v.start), end: fmtClockSecs(v.end) };
+      const bad = vs.error ? vs.errorField : null; const eid = `err-${v.id}`;
+      return `<tr class="is-editing" data-vid="${v.id}">
+        <td class="date">${dayLabel(v.day)}</td>
+        <td><label class="vlabel" for="s-${v.id}">Start</label><input id="s-${v.id}" type="time" step="1" value="${d.start}" ${bad === 'start' || bad === 'both' ? `aria-invalid="true" aria-describedby="${eid}"` : ''}></td>
+        <td><label class="vlabel" for="e-${v.id}">End</label><input id="e-${v.id}" type="time" step="1" value="${d.end}" ${bad === 'end' || bad === 'both' ? `aria-invalid="true" aria-describedby="${eid}"` : ''}></td>
+        <td class="t"><span class="vlabel">Duration</span>${(() => { const a = parseClock(d.start), b = parseClock(d.end); return a != null && b != null && b > a ? fmtTotal(b - a) : '—'; })()}</td>
+        <td class="actions"><button class="btn btn-primary btn-sm" type="button" data-act="save">${icon('check')}Save</button><button class="btn btn-ghost btn-sm" type="button" data-act="cancel">Cancel</button></td>
+      </tr>${vs.error ? `<tr class="msg"><td colspan="5"><div class="refusal" id="${eid}" role="alert">${icon('alert')}<div><strong>Can’t save this change</strong>${esc(vs.error)}</div></div></td></tr>` : ''}`;
+    }
+    const base = `<tr data-vid="${v.id}">
+      <td class="date">${dayLabel(v.day)}</td>
+      <td class="t"><span class="vlabel-sm">Start</span>${fmtClockSecs(v.start)}</td>
+      <td class="t"><span class="vlabel-sm">End</span>${fmtClockSecs(v.end)}</td>
+      <td class="t"><span class="vlabel-sm">Duration</span>${fmtTotal(dur)}</td>
+      <td class="actions"><button class="btn btn-ghost btn-sm" type="button" data-act="edit" aria-label="Edit the visit at ${fmtClockSecs(v.start)}">${icon('edit')}Edit</button><button class="btn btn-ghost btn-sm" type="button" data-act="delete" aria-label="Delete the visit at ${fmtClockSecs(v.start)}">${icon('trash')}Delete</button></td>
+    </tr>`;
+    if (vs.confirmId === v.id) return base + `<tr class="msg"><td colspan="5"><div class="confirm" role="alertdialog" aria-label="Confirm delete"><p>Delete the visit from ${fmtClockSecs(v.start)} (${fmtTotal(dur)})? This can’t be undone.</p><span><button class="btn btn-danger btn-sm" type="button" data-act="confirm-delete">${icon('trash')}Delete visit</button> <button class="btn btn-ghost btn-sm" type="button" data-act="keep">Keep it</button></span></div></td></tr>`;
+    return base;
+  };
+  const running = c.outSince ? `<tr><td class="date">Today</td><td class="t"><span class="vlabel-sm">Start</span>${fmtClockDate(new Date(c.outSince))}:00</td><td><span class="tag tag-run">${icon('hourglass')}Running</span></td><td class="t">${fmtTotal(st.run)}</td><td class="actions" style="font-size:var(--fs-sm);color:var(--c-text-muted)">Stop it to edit</td></tr>` : '';
+  return `<div class="panel">
+    <div class="panel-head"><div class="sheet-head">${avatarHTML(c.avatar, 'md')}<div><h2 class="panel-title" id="dlg-title">${esc(c.alias)} · Visits</h2><div class="sub">${MONTH_LABEL}</div></div></div>
+      <button class="btn btn-icon" type="button" data-act="close" aria-label="Close">${icon('x')}</button></div>
+    <div class="sheet-body">
+      <p><strong class="digits" style="font-size:var(--fs-lg)">${st.visits}</strong> visits · <strong class="digits" style="font-size:var(--fs-lg)">${fmtTotal(st.total)}</strong> in total · longest ${fmtTotal(st.longest)}</p>
+      ${rows.length || running ? `<table class="vtable"><caption class="sr-only">Visits for ${esc(c.alias)} in ${MONTH_LABEL}</caption>
+        <thead><tr><th scope="col">Date</th><th scope="col">Start</th><th scope="col">End</th><th scope="col">Duration</th><th scope="col" class="actions"><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>${running}${rows.slice(0, vs.limit || rows.length).map(rowHTML).join('')}${vs.limit && rows.length > vs.limit ? `<tr><td colspan="5" style="color:var(--c-text-muted);font-size:var(--fs-sm)">…and ${rows.length - vs.limit} earlier visits</td></tr>` : ''}</tbody></table>`
+      : `<div class="empty"><div class="art">${icon('list')}</div><h3>No visits this month</h3></div>`}
+    </div></div>`;
+}
+
+function validateVisit(c, v, s, e) {
+  if (s == null || e == null) return { msg: 'Enter both a start and an end time.', field: 'both' };
+  if (e <= s) return { msg: `A visit can’t end before it starts. The end (${fmtClockSecs(e)}) is earlier than the start (${fmtClockSecs(s)}).`, field: 'end' };
+  const o = c.visits.find(x => x.id !== v.id && x.day === v.day && x.start < e && x.end > s);
+  if (o) return { msg: `This would overlap another visit on ${dayLabel(v.day)}, from ${fmtClockSecs(o.start)} to ${fmtClockSecs(o.end)}. Visits can’t overlap.`, field: 'both' };
+  return null;
+}
+
+function validateAlias(value, exceptId) {
+  const v = value.trim(); const n = [...v].length;
+  if (!n) return 'Type an alias for the colleague.';
+  if (n > 30) return `An alias can be at most 30 characters. This one has ${n}.`;
+  if (colleagues.some(c => c.id !== exceptId && c.alias.toLowerCase() === v.toLowerCase())) return `“${v}” is already in use by another colleague. Choose a different alias.`;
+  return null;
+}
+
+/* =========================================================
+   Live main screen
+   ========================================================= */
+let viewMonth = CURRENT;
+const cPanel = $('#colleagues-panel'), lPanel = $('#lb-panel');
+const announce = t => { $('#announcer').textContent = t; };
+
+function renderColleagues() { cPanel.innerHTML = colleaguesPanelHTML(colleagues, Date.now()); }
+function renderLeaderboard() { lPanel.classList.toggle('is-closed', viewMonth !== CURRENT); lPanel.innerHTML = lbPanelHTML(viewMonth, Date.now()); }
+function refreshCount() { const el = $('.panel-count', cPanel); if (el) el.textContent = `${colleagues.length} active · ${colleagues.filter(c => c.outSince).length} out`; }
+
+function tick() {
+  const now = Date.now();
+  colleagues.forEach(c => {
+    const li = cPanel.querySelector(`.crow[data-id="${c.id}"]`); if (!li) return;
+    const state = rowState(c, now);
+    if (li.dataset.state !== state) { li.dataset.state = state; li.querySelector('.av-badge').innerHTML = icon(state === 'long' ? 'alert' : 'hourglass'); }
+    if (c.outSince) li.querySelector('.timer').textContent = fmtTimer((now - c.outSince) / 1000);
+  });
+  if (viewMonth === CURRENT) { const b = $('.lb-body', lPanel); if (b) b.innerHTML = lbBodyHTML(CURRENT, now); }
+}
+setInterval(tick, 1000);
+
+function toggleVisit(c, btn) {
+  const now = Date.now();
+  if (c.outSince) {
+    const s = new Date(c.outSince); const start = s.getHours() * 3600 + s.getMinutes() * 60 + s.getSeconds();
+    const dur = Math.max(1, Math.round((now - c.outSince) / 1000));
+    c.visits.push({ id: nextId('v'), day: '2026-10-08', start, end: start + dur });
+    c.outSince = null; announce(`${c.alias} is back after ${fmtTotal(dur)}.`);
+  } else { c.outSince = now; announce(`${c.alias} is out. Timer started.`); }
+  const li = btn.closest('.crow');
+  li.classList.toggle('is-out', !!c.outSince);
+  li.querySelector('.since').textContent = c.outSince ? fmtClockDate(new Date(c.outSince)) : '';
+  li.querySelector('.timer').textContent = c.outSince ? '00:00' : '';
+  li.querySelector('.meta-idle').textContent = (n => n ? `${n} visit${n > 1 ? 's' : ''} in October` : 'No visits this month')(stats(c).visits);
+  btn.className = `btn btn-timer act ${c.outSince ? 'btn-stop' : 'btn-start'}`;
+  btn.innerHTML = timerBtnHTML(c);
+  btn.setAttribute('aria-label', (c.outSince ? 'Stop the visit for ' : 'Start a visit for ') + c.alias);
+  li.dataset.state = rowState(c, now);
+  refreshCount(); tick();
+}
+
+/* menus */
+function closeMenus(except) {
+  document.querySelectorAll('.menu:not([hidden])').forEach(m => { if (m === except) return; m.hidden = true; const b = m.previousElementSibling?.matches('[aria-haspopup]') ? m.previousElementSibling : m.parentElement.querySelector('[aria-haspopup]'); b?.setAttribute('aria-expanded', 'false'); });
+}
+function openMenu(btn, menu) {
+  const open = menu.hidden; closeMenus(menu);
+  menu.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+  if (open) (menu.querySelector('[aria-checked="true"]') || menu.querySelector('button')).focus();
+}
+document.addEventListener('click', e => { if (!e.target.closest('.menu, [aria-haspopup]')) closeMenus(); });
+document.addEventListener('keydown', e => {
+  const menu = e.target.closest?.('.menu');
+  if (e.key === 'Escape' && document.querySelector('.menu:not([hidden])')) {
+    const m = document.querySelector('.menu:not([hidden])'); const b = m.parentElement.querySelector('[aria-haspopup]'); closeMenus(); b?.focus(); e.preventDefault();
+  }
+  if (menu && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+    const items = [...menu.querySelectorAll('button')]; const i = items.indexOf(e.target);
+    items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus(); e.preventDefault();
+  }
+});
+
+/* colleagues panel events */
+cPanel.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const li = b.closest('.crow'); const c = li && colleagues.find(x => x.id === li.dataset.id);
+  const act = b.dataset.act;
+  if (act === 'toggle') toggleVisit(c, b);
+  else if (act === 'menu') openMenu(b, li.querySelector('.menu'));
+  else if (['visits', 'alias', 'avatar', 'archive'].includes(act)) { closeMenus(); openDialog(act, c); }
+  else if (b.classList.contains('pick')) selectPick(b);
+});
+function selectPick(b) {
+  if (b.getAttribute('aria-disabled') === 'true') return;
+  const g = b.closest('.picker');
+  g.querySelectorAll('.pick').forEach(p => { p.setAttribute('aria-checked', String(p === b)); p.tabIndex = p === b ? 0 : -1; });
+  b.focus();
+  const wrap = b.closest('.picker-wrap'); wrap.classList.remove('has-error'); wrap.querySelector('.field-error')?.remove();
+}
+document.addEventListener('keydown', e => {
+  const p = e.target.closest?.('.pick'); if (!p || !['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', ' '].includes(e.key)) return;
+  e.preventDefault(); if (e.key === ' ') return selectPick(p);
+  const all = [...p.parentElement.querySelectorAll('.pick')]; let i = all.indexOf(p); const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 5, ArrowUp: -5 }[e.key];
+  for (let n = 0; n < 20; n++) { i = (i + step + 20) % 20; if (all[i].getAttribute('aria-disabled') !== 'true') { selectPick(all[i]); break; } }
+});
+cPanel.addEventListener('input', e => {
+  if (e.target.name !== 'alias') return;
+  const f = e.target.closest('.field'); const n = [...e.target.value].length;
+  const ctr = f.querySelector('.counter'); ctr.textContent = `${n}/30`; ctr.classList.toggle('over', n > 30);
+  if (f.classList.contains('has-error') && n <= 30) { f.classList.remove('has-error'); f.querySelector('.field-error')?.remove(); e.target.removeAttribute('aria-invalid'); }
+});
+cPanel.addEventListener('submit', e => {
+  e.preventDefault(); const form = e.target; const input = form.querySelector('[name=alias]');
+  const sel = form.querySelector('.pick[aria-checked="true"]');
+  const err = validateAlias(input.value); const avErr = sel ? '' : 'Choose an avatar for the colleague.';
+  if (err || avErr) {
+    const taken = new Map(colleagues.map(c => [c.avatar, c.alias]));
+    form.outerHTML = addFormHTML({ k: 'main', value: input.value, error: err || '', avError: avErr, selected: sel ? +sel.dataset.av : null, taken });
+    const nf = cPanel.querySelector('form'); (err ? nf.querySelector('[name=alias]') : nf.querySelector('.pick[tabindex="0"]'))?.focus();
+    return;
+  }
+  colleagues.push({ id: nextId('c'), alias: input.value.trim(), avatar: +sel.dataset.av, visits: [], outSince: null }); byAlias();
+  renderColleagues(); renderLeaderboard(); announce(`${input.value.trim()} added.`);
+  cPanel.querySelector('[name=alias]').focus();
+});
+
+/* leaderboard events */
+lPanel.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const i = MONTHS.findIndex(m => m.key === viewMonth);
+  const focusSel = sel => { renderLeaderboard(); lPanel.querySelector(sel)?.focus(); };
+  if (b.dataset.act === 'prev' && i > 0) { viewMonth = MONTHS[i - 1].key; focusSel('[data-act=prev]:not(:disabled)') || 0; if (!lPanel.contains(document.activeElement)) lPanel.querySelector('[data-act=months]').focus(); }
+  else if (b.dataset.act === 'next' && i < MONTHS.length - 1) { viewMonth = MONTHS[i + 1].key; focusSel('[data-act=next]:not(:disabled)'); if (!lPanel.contains(document.activeElement)) lPanel.querySelector('[data-act=months]').focus(); }
+  else if (b.dataset.act === 'months') openMenu(b, lPanel.querySelector('.month-list'));
+  else if (b.dataset.month) { viewMonth = b.dataset.month; focusSel('[data-act=months]'); }
+});
+
+/* dialogs */
+const dlg = $('#dlg');
+let vState = null, dlgColleague = null;
+function openDialog(kind, c) {
+  dlgColleague = c;
+  if (kind === 'visits') { vState = {}; dlg.innerHTML = visitsSheetHTML(c, vState); }
+  else if (kind === 'alias') dlg.innerHTML = smallDialog(c, 'Change alias', aliasFieldHTML({ value: c.alias }), 'Save alias');
+  else if (kind === 'avatar') {
+    const taken = new Map(colleagues.filter(x => x.id !== c.id).map(x => [x.avatar, x.alias]));
+    dlg.innerHTML = smallDialog(c, 'Change avatar', pickerHTML({ taken, selected: c.avatar }), 'Save avatar');
+  } else if (kind === 'archive') dlg.innerHTML = smallDialog(c, `Archive ${esc(c.alias)}?`, `<p style="margin:0">${esc(c.alias)} leaves the colleagues panel and their avatar becomes free. Their visits stay on this month’s leaderboard and on past months.</p>`, 'Archive', true);
+  dlg.dataset.kind = kind; dlg.showModal();
+  (dlg.querySelector('input, .pick[tabindex="0"], [data-act=confirm]') || dlg.querySelector('button')).focus();
+}
+function smallDialog(c, title, body, ok, danger) {
+  return `<form class="panel" method="dialog" novalidate style="max-width:560px;margin:auto">
+    <div class="panel-head"><div class="sheet-head">${avatarHTML(c.avatar, 'md')}<h2 class="panel-title" id="dlg-title">${title}</h2></div>
+      <button class="btn btn-icon" type="button" data-act="close" aria-label="Close">${icon('x')}</button></div>
+    <div class="sheet-body">${body}
+      <div style="display:flex;gap:var(--sp-3);justify-content:flex-end;margin-top:var(--sp-5)">
+        <button class="btn btn-ghost" type="button" data-act="close">Cancel</button>
+        <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" type="button" data-act="confirm">${danger ? icon('archive') : icon('check')}${ok}</button></div></div></form>`;
+}
+dlg.addEventListener('close', () => { dlg.innerHTML = ''; const li = cPanel.querySelector(`.crow[data-id="${dlgColleague?.id}"] .more`); li?.focus(); });
+dlg.addEventListener('input', e => { if (e.target.name === 'alias') { const f = e.target.closest('.field'); const n = [...e.target.value].length; const ctr = f.querySelector('.counter'); ctr.textContent = `${n}/30`; ctr.classList.toggle('over', n > 30); } });
+dlg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const c = dlgColleague; const act = b.dataset.act; const kind = dlg.dataset.kind;
+  if (b.classList.contains('pick')) return selectPick(b);
+  if (act === 'close') return dlg.close();
+  if (kind === 'visits') {
+    const tr = b.closest('tr'); const v = tr && c.visits.find(x => x.id === tr.dataset.vid);
+    const rerender = sel => { dlg.innerHTML = visitsSheetHTML(c, vState); if (sel) dlg.querySelector(sel)?.focus(); tick(); };
+    if (act === 'edit') { vState = { editId: v.id }; rerender(`#s-${v.id}`); }
+    else if (act === 'cancel') { const id = vState.editId; vState = {}; rerender(`tr[data-vid="${id}"] [data-act=edit]`); }
+    else if (act === 'save') {
+      const s = dlg.querySelector(`#s-${v.id}`).value, en = dlg.querySelector(`#e-${v.id}`).value;
+      const bad = validateVisit(c, v, parseClock(s), parseClock(en));
+      if (bad) { vState = { editId: v.id, draft: { start: s, end: en }, error: bad.msg, errorField: bad.field }; rerender(bad.field === 'end' ? `#e-${v.id}` : `#s-${v.id}`); }
+      else { v.start = parseClock(s); v.end = parseClock(en); vState = {}; rerender(`tr[data-vid="${v.id}"] [data-act=edit]`); announce('Visit updated.'); }
+    }
+    else if (act === 'delete') { vState = { confirmId: v.id }; rerender('[data-act=confirm-delete]'); }
+    else if (act === 'keep') { const id = vState.confirmId; vState = {}; rerender(`tr[data-vid="${id}"] [data-act=delete]`); }
+    else if (act === 'confirm-delete') { const id = vState.confirmId; c.visits = c.visits.filter(x => x.id !== id); vState = {}; rerender('[data-act=close]'); announce('Visit deleted.'); refreshMeta(c); }
+    return;
+  }
+  if (act === 'confirm') {
+    if (kind === 'alias') {
+      const input = dlg.querySelector('[name=alias]'); const err = validateAlias(input.value, c.id);
+      if (err) { const f = input.closest('.field'); f.outerHTML = aliasFieldHTML({ value: input.value, error: err, fid: input.id }); dlg.querySelector('[name=alias]').focus(); return; }
+      c.alias = input.value.trim(); byAlias();
+    } else if (kind === 'avatar') { const sel = dlg.querySelector('.pick[aria-checked="true"]'); if (sel) c.avatar = +sel.dataset.av; }
+    else if (kind === 'archive') { colleagues = colleagues.filter(x => x.id !== c.id); announce(`${c.alias} archived.`); }
+    dlg.close(); renderColleagues(); renderLeaderboard();
+  }
+});
+function refreshMeta(c) { const li = cPanel.querySelector(`.crow[data-id="${c.id}"] .meta-idle`); if (li) { const n = stats(c).visits; li.textContent = n ? `${n} visit${n > 1 ? 's' : ''} in October` : 'No visits this month'; } }
+
+/* =========================================================
+   Static gallery
+   ========================================================= */
+function buildGallery() {
+  const NOWF = NOW0;
+  const greta = colleagues.find(c => c.alias === 'Gunpowder Greta');
+  const bess = colleagues.find(c => c.alias === 'Barnacle Bess');
+  const sven = colleagues.find(c => c.alias === 'Salty Sven');
+  $('#g-rows').innerHTML = [sven, bess, greta].map(c => colleagueRowHTML(c, NOWF)).join('');
+  const fig = (cap, inner, cls = '') => `<figure class="gitem"><figcaption>${cap}</figcaption><div class="gframe panel ${cls}" inert>${inner}</div></figure>`;
+  const taken = new Map(colleagues.map(c => [c.avatar, c.alias]));
+  $('#g-add').innerHTML =
+    fig('Empty alias', addFormHTML({ k: 'g1', value: '', error: 'Type an alias for the colleague.', selected: 3, taken })) +
+    fig('Too long (34 characters)', addFormHTML({ k: 'g2', value: 'The Dread Captain of Spreadsheets!', error: 'An alias can be at most 30 characters. This one has 34.', selected: 3, taken })) +
+    fig('Already in use', addFormHTML({ k: 'g3', value: 'Barnacle Bess', error: '“Barnacle Bess” is already in use by another colleague. Choose a different alias.', selected: 3, taken }));
+  const allTaken = new Map(AVATARS.map((a, i) => [a.id, `Colleague ${i + 1}`]));
+  $('#g-picker').innerHTML =
+    fig('Picker: 8 taken, one selected', `<div style="padding:var(--sp-5)">${pickerHTML({ taken, selected: 13 })}</div>`) +
+    fig('Picker: no avatar chosen on submit', `<div style="padding:var(--sp-5)">${pickerHTML({ taken, error: 'Choose an avatar for the colleague.' })}</div>`) +
+    fig('All twenty avatars taken', addFormHTML({ k: 'g4', taken: allTaken }));
+  $('#g-months').innerHTML =
+    fig('Current month (October 2026): leading, not won', lbPanelHTML(CURRENT, NOWF, { k: 'g5' })) +
+    fig('Closed month with a winner (September 2026)', lbPanelHTML('2026-09', NOWF, { k: 'g6' }), 'is-closed') +
+    fig('Closed month with a tie (August 2026)', lbPanelHTML('2026-08', NOWF, { k: 'g7' }), 'is-closed') +
+    fig('Closed month with no visits (July 2026)', lbPanelHTML('2026-07', NOWF, { k: 'g8' }), 'is-closed');
+  const c = colleagues.find(x => x.alias === 'Captain Spreadsheet');
+  const v = [...c.visits].sort((a, b) => b.day.localeCompare(a.day) || b.start - a.start);
+  const fmt = fmtClockSecs;
+  const pair = v.map((x, i) => [x, v[i + 1]]).find(([a, b]) => b && a.day === b.day); // b is earlier on the same day
+  const [later, earlier] = pair;
+  $('#g-visits').innerHTML =
+    fig('Edit in progress', visitsSheetHTML(c, { editId: v[0].id, draft: { start: fmt(v[0].start), end: fmt(v[0].end + 60) }, limit: 4 }, NOWF)) +
+    fig('Refused: ends before it starts', visitsSheetHTML(c, { editId: v[0].id, draft: { start: fmt(v[0].start), end: fmt(v[0].start - 540) }, error: `A visit can’t end before it starts. The end (${fmt(v[0].start - 540)}) is earlier than the start (${fmt(v[0].start)}).`, errorField: 'end', limit: 4 }, NOWF)) +
+    fig('Refused: overlaps another visit', visitsSheetHTML(c, { editId: earlier.id, draft: { start: fmt(earlier.start), end: fmt(later.start + 240) }, error: `This would overlap another visit on ${dayLabel(later.day)}, from ${fmt(later.start)} to ${fmt(later.end)}. Visits can’t overlap.`, errorField: 'both', limit: 4 }, NOWF)) +
+    fig('Delete asks first', visitsSheetHTML(c, { confirmId: v[2].id, limit: 4 }, NOWF));
+  $('#g-signin').innerHTML = `<div class="signin"><div class="panel signin-card">
+      <h1 class="wordmark"><span class="seal" aria-hidden="true"><svg class="ic"><use href="#i-hourglass"/></svg></span><span>Toilet <em>Time</em> Tracker</span></h1>
+      <div class="parade" aria-hidden="true">${[1, 6, 11, 16, 4, 13].map(i => avatarHTML(i, 'md', true)).join('')}</div>
+      <p>Every month, one colleague is crowned for the most time away from their desk. Sign in to run the stopwatch.</p>
+      <button class="btn btn-google" type="button"><span class="g" aria-hidden="true">G</span>Sign in with Google</button>
+      <p class="signin-foot">Only the operator signs in. Everyone else just watches the leaderboard.</p>
+    </div></div>`;
+  $('#g-save').innerHTML = saveHTML('saved') + saveHTML('pending') + saveHTML('expired');
+  $('#g-empty').innerHTML =
+    fig('No colleagues yet', colleaguesPanelHTML([], NOWF, { k: 'g9', taken: new Map() })) +
+    fig('Empty leaderboard (current month, no visits)', `<div class="panel-head"><h2 class="panel-title">Leaderboard</h2></div><div class="lb-banner"><span class="live-dot" aria-hidden="true"></span><strong>In progress</strong><span>Totals update live. The winner is announced when the month ends.</span></div><div class="empty"><div class="art">${icon('flag')}</div><h3>The leaderboard is empty</h3><p>No visits yet this month. The first colleague to step out takes the lead.</p></div>`);
+}
+
+/* =========================================================
+   Docs: tokens + contrast
+   ========================================================= */
+$('#tokens-pre').textContent = $('#tokens').textContent.trim();
+const CONTRAST = [
+  ['Light', 'Text', '#111923', '#E4D5B7', 12.21, 'Body text on page'],
+  ['Light', 'Text', '#111923', '#F4EBD8', 14.93, 'Body text, aliases on panels'],
+  ['Light', 'Muted text', '#4E4A3E', '#F4EBD8', 7.47, 'Meta lines, table headers'],
+  ['Light', 'Muted text', '#4E4A3E', '#E9DDC4', 6.58, 'Muted text on sunken areas'],
+  ['Light', 'Brass ink (adjusted)', '#73531A', '#F4EBD8', 5.94, 'Leading tag, stamps, notice icons'],
+  ['Light', 'Brass (original, not used as text)', '#C49B4B', '#F4EBD8', 2.18, 'Fails: replaced by #73531A for text'],
+  ['Both', 'Navy on brass fill', '#111923', '#C49B4B', 6.85, 'Primary button, Winner tag'],
+  ['Both', 'Navy on green fill', '#111923', '#32CD7A', 8.55, 'Start button, Out tag'],
+  ['Light', 'Parchment on red fill', '#F4EBD8', '#8C2D31', 6.99, 'Stop button, Over 30 min tag'],
+  ['Light', 'Red ink', '#8C2D31', '#F4EBD8', 6.99, 'Errors on panels'],
+  ['Light', 'Red ink on red tint', '#8C2D31', '#F2D6D0', 6.04, 'Over-30 timer, refusal heading'],
+  ['Light', 'Text on red tint', '#111923', '#F2D6D0', 12.89, 'Over-30 row alias'],
+  ['Light', 'Run ink (adjusted)', '#0E6B3A', '#F4EBD8', 5.57, 'Running totals'],
+  ['Light', 'Run ink on mint tint', '#0E6B3A', '#DCEFD9', 5.46, 'Live timer in an out row'],
+  ['Light', 'Green (original, not used as text)', '#32CD7A', '#F4EBD8', 1.75, 'Fails: replaced by #0E6B3A for text'],
+  ['Light', 'Text on winner tint', '#111923', '#EAD39A', 12.03, 'Winner row and banner'],
+  ['Light', 'Input border (UI)', '#6B6250', '#F4EBD8', 5.08, 'Inputs, ghost buttons (needs 3:1)'],
+  ['Dark', 'Text', '#E4D5B7', '#111923', 12.21, 'Body text on page, header bar'],
+  ['Dark', 'Text', '#E4D5B7', '#23222B', 10.86, 'Aliases on panels'],
+  ['Dark', 'Muted text', '#A99E88', '#23222B', 5.94, 'Meta lines'],
+  ['Dark', 'Muted text', '#A99E88', '#111923', 6.68, 'Header operator line, saved status'],
+  ['Dark', 'Brass text', '#C49B4B', '#23222B', 6.09, 'Leading tag, stamps'],
+  ['Dark', 'Brass text', '#C49B4B', '#111923', 6.85, 'Retrying status in header'],
+  ['Dark', 'Green text', '#32CD7A', '#23222B', 7.60, 'Running totals'],
+  ['Dark', 'Green on mint tint', '#32CD7A', '#15302A', 6.82, 'Live timer in an out row'],
+  ['Dark', 'Red (original, not used as text)', '#8C2D31', '#23222B', 1.90, 'Fails: replaced by #F08A86 for text'],
+  ['Dark', 'Red ink (adjusted)', '#F08A86', '#23222B', 6.50, 'Errors, over-30 timer'],
+  ['Dark', 'Red ink on red tint', '#F08A86', '#3B1D24', 6.26, 'Over-30 row, refusal heading, signed-out status'],
+  ['Dark', 'Text on red tint', '#E4D5B7', '#3B1D24', 10.45, 'Over-30 row alias'],
+  ['Dark', 'Parchment on red fill', '#E4D5B7', '#8C2D31', 5.72, 'Stop button'],
+  ['Dark', 'Text on winner tint', '#E4D5B7', '#3A3120', 8.84, 'Winner row and banner'],
+  ['Dark', 'Input border (UI)', '#7D7690', '#23222B', 3.64, 'Inputs, ghost buttons (needs 3:1)'],
+];
+$('#ctable').innerHTML = `<thead><tr><th>Theme</th><th>Role</th><th>Sample</th><th>Foreground</th><th>Background</th><th>Ratio</th><th>AA</th><th>Used for</th></tr></thead><tbody>${CONTRAST.map(([t, r, f, b, cr, u]) =>
+  `<tr><td>${t}</td><td>${r}</td><td><span class="pair" style="color:${f};background:${b}">Aa 12:34</span></td><td><span class="sw" style="background:${f}"></span>${f}</td><td><span class="sw" style="background:${b}"></span>${b}</td><td class="r">${cr.toFixed(2)}:1</td><td>${cr >= 4.5 ? '✓ Pass' : cr >= 3 && /UI/.test(r) ? '✓ Pass (UI 3:1)' : '✗ Not used for text'}</td><td>${u}</td></tr>`).join('')}</tbody>`;
+
+/* =========================================================
+   Preview controls
+   ========================================================= */
+let saveState = 'saved';
+function renderSave() { $('#save-slot').innerHTML = saveHTML(saveState); }
+document.querySelectorAll('input[name=theme]').forEach(r => r.addEventListener('change', () => { if (r.value === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = r.value; }));
+document.querySelectorAll('input[name=width]').forEach(r => r.addEventListener('change', () => $('#main').classList.toggle('is-narrow', r.value === 'narrow')));
+document.querySelectorAll('input[name=save]').forEach(r => r.addEventListener('change', () => { saveState = r.value; renderSave(); }));
+
+renderSave(); renderColleagues(); renderLeaderboard(); buildGallery();
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+/* Toilet Time Tracker design tokens (light + dark). Same as <style id="tokens"> in the design file. */
+/* ---- Base palette: the six given colours ---- */
+:root {
+  --navy-900:      #111923; /* given: deep navy   */
+  --parchment-200: #E4D5B7; /* given: parchment   */
+  --brass-500:     #C49B4B; /* given: brass       */
+  --blood-700:     #8C2D31; /* given: blood red   */
+  --mint-500:      #32CD7A; /* given: neon green  */
+  --ink-850:       #23222B; /* given: charcoal    */
+
+  /* ---- Derived shades ---- */
+  --parchment-50:  #F4EBD8;  --parchment-100: #E9DDC4;  --parchment-400: #CDBB95;
+  --umber-400:     #8A8270;  --umber-600:     #6B6250;  --umber-700:     #4E4A3E;
+  --brass-200:     #D4AE62;  --brass-300:     #EAD39A;  --brass-600:     #B28838;  --brass-800: #73531A;
+  --mint-100:      #DCEFD9;  --mint-400:      #4ADB8C;  --mint-600:      #2BB86C;  --mint-800:  #0E6B3A;  --mint-950: #15302A;
+  --blood-100:     #F2D6D0;  --blood-300:     #F08A86;  --blood-600:     #A3363B;  --blood-800: #74242A;  --blood-950: #3B1D24;
+  --ink-950:       #05080C;  --ink-900:       #191920;  --ink-800:       #2D2C37;  --ink-700:   #34323F;
+  --ink-600:       #5A5668;  --ink-500:       #6E6878;  --ink-400:       #7D7690;  --sand-400:  #A99E88;  --brass-950: #3A3120;
+
+  /* ---- Type ---- */
+  --font-display: "Pixelify Sans", ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --font-body:    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-digits:  "VT323", ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  --fs-xs:    0.8125rem; /* 13px  small print, table headers      */
+  --fs-sm:    0.9375rem; /* 15px  meta lines, captions             */
+  --fs-md:    1.0625rem; /* 17px  body, buttons                    */
+  --fs-lg:    1.375rem;  /* 22px  aliases (readable at ~2 m)       */
+  --fs-xl:    1.75rem;   /* 28px  panel titles                     */
+  --fs-2xl:   2.5rem;    /* 40px  wordmark                         */
+  --fs-num:   2rem;      /* 32px  VT323 leaderboard totals         */
+  --fs-timer: 3.25rem;   /* 52px  VT323 live timers                */
+  --lh-tight: 1.1;
+  --lh-body:  1.45;
+
+  /* ---- Spacing (4px grid) ---- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* ---- Shape ---- */
+  --r-0: 0;          /* default: square, pixel edges          */
+  --r-1: 2px;        /* inputs only                           */
+  --bw-1: 2px;       /* control borders                       */
+  --bw-2: 3px;       /* panel borders, error borders          */
+  --tap: 44px;       /* minimum target                        */
+  --av-lg: 56px;  --av-md: 40px;  --av-pick: 52px;
+
+  /* ---- Motion ---- */
+  --dur-press: 80ms;
+  --dur-pulse: 1.1s;
+  --ease-pixel: steps(2, jump-none);
+}
+
+/* ---- Light theme roles (default) ---- */
+:root {
+  color-scheme: light;
+  --c-bg:              var(--parchment-200);
+  --c-surface:         var(--parchment-50);
+  --c-surface-sunken:  var(--parchment-100);
+  --c-surface-input:   #FBF6EA;
+  --c-text:            var(--navy-900);
+  --c-text-muted:      var(--umber-700);
+  --c-text-disabled:   var(--umber-400);
+  --c-border-strong:   var(--navy-900);   /* panel frames, button edges */
+  --c-border:          var(--umber-600);  /* inputs, ghost buttons (≥3:1) */
+  --c-divider:         var(--parchment-400); /* decorative row rules */
+  --c-disabled-bg:     var(--parchment-100);
+  --c-accent:          var(--brass-500);  --c-accent-hover: var(--brass-600);
+  --c-on-accent:       var(--navy-900);
+  --c-accent-ink:      var(--brass-800);  /* brass as text */
+  --c-run:             var(--mint-500);   --c-run-hover: var(--mint-600);
+  --c-on-run:          var(--navy-900);
+  --c-run-ink:         var(--mint-800);
+  --c-run-tint:        var(--mint-100);
+  --c-danger:          var(--blood-700);  --c-danger-hover: var(--blood-800);
+  --c-on-danger:       var(--parchment-50);
+  --c-danger-ink:      var(--blood-700);
+  --c-danger-tint:     var(--blood-100);
+  --c-danger-edge:     var(--navy-900);
+  --c-winner-tint:     var(--brass-300);
+  --c-focus:           var(--navy-900);
+  --c-focus-gap:       var(--parchment-50);
+  --c-shadow:          var(--navy-900);
+  --c-overlay:         rgb(17 25 35 / .6);
+  --c-hatch:           rgb(17 25 35 / .45);
+  --shadow-sm: 2px 2px 0 var(--c-shadow);
+  --shadow-md: 4px 4px 0 var(--c-shadow);
+  --shadow-lg: 6px 6px 0 var(--c-shadow);
+}
+
+/* ---- Dark theme roles: follows the system unless forced light ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --c-bg: var(--navy-900); --c-surface: var(--ink-850); --c-surface-sunken: var(--ink-900); --c-surface-input: var(--navy-900);
+    --c-text: var(--parchment-200); --c-text-muted: var(--sand-400); --c-text-disabled: var(--ink-500);
+    --c-border-strong: var(--ink-600); --c-border: var(--ink-400); --c-divider: var(--ink-700); --c-disabled-bg: var(--ink-800);
+    --c-accent: var(--brass-500); --c-accent-hover: var(--brass-200); --c-on-accent: var(--navy-900); --c-accent-ink: var(--brass-500);
+    --c-run: var(--mint-500); --c-run-hover: var(--mint-400); --c-on-run: var(--navy-900); --c-run-ink: var(--mint-500); --c-run-tint: var(--mint-950);
+    --c-danger: var(--blood-700); --c-danger-hover: var(--blood-600); --c-on-danger: var(--parchment-200); --c-danger-ink: var(--blood-300); --c-danger-tint: var(--blood-950); --c-danger-edge: var(--blood-300);
+    --c-winner-tint: var(--brass-950);
+    --c-focus: var(--parchment-200); --c-focus-gap: var(--navy-900);
+    --c-shadow: var(--ink-950); --c-overlay: rgb(5 8 12 / .7); --c-hatch: rgb(228 213 183 / .35);
+    --shadow-sm: 2px 2px 0 var(--c-shadow); --shadow-md: 4px 4px 0 var(--c-shadow); --shadow-lg: 6px 6px 0 var(--c-shadow);
+  }
+}
+/* Forced dark, and .theme-dark for always-dark regions (the header bar) */
+:root[data-theme="dark"], .theme-dark {
+  color-scheme: dark;
+  --c-bg: var(--navy-900); --c-surface: var(--ink-850); --c-surface-sunken: var(--ink-900); --c-surface-input: var(--navy-900);
+  --c-text: var(--parchment-200); --c-text-muted: var(--sand-400); --c-text-disabled: var(--ink-500);
+  --c-border-strong: var(--ink-600); --c-border: var(--ink-400); --c-divider: var(--ink-700); --c-disabled-bg: var(--ink-800);
+  --c-accent: var(--brass-500); --c-accent-hover: var(--brass-200); --c-on-accent: var(--navy-900); --c-accent-ink: var(--brass-500);
+  --c-run: var(--mint-500); --c-run-hover: var(--mint-400); --c-on-run: var(--navy-900); --c-run-ink: var(--mint-500); --c-run-tint: var(--mint-950);
+  --c-danger: var(--blood-700); --c-danger-hover: var(--blood-600); --c-on-danger: var(--parchment-200); --c-danger-ink: var(--blood-300); --c-danger-tint: var(--blood-950); --c-danger-edge: var(--blood-300);
+  --c-winner-tint: var(--brass-950);
+  --c-focus: var(--parchment-200); --c-focus-gap: var(--navy-900);
+  --c-shadow: var(--ink-950); --c-overlay: rgb(5 8 12 / .7); --c-hatch: rgb(228 213 183 / .35);
+  --shadow-sm: 2px 2px 0 var(--c-shadow); --shadow-md: 4px 4px 0 var(--c-shadow); --shadow-lg: 6px 6px 0 var(--c-shadow);
+}
