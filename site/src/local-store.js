@@ -3,9 +3,9 @@
  * @typedef {Pick<Storage, 'getItem' | 'setItem'>} KeyValueStorage
  */
 
-const COLLEAGUES_KEY = 'toiletovhell:colleagues';
+const COLLEAGUES_KEY = 'three-t-ov-hell:colleagues';
 /** @param {string} month */
-const visitsKey = (month) => `toiletovhell:visits-${month}`;
+const visitsKey = (month) => `three-t-ov-hell:visits-${month}`;
 
 /**
  * A stand-in for the browser's localStorage that forgets everything when

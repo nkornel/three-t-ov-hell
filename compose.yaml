@@ -2,6 +2,8 @@
 #   docker compose run --rm test        run the tests
 #   docker compose run --rm typecheck   typecheck the site's JavaScript
 #   docker compose up preview           serve the site at http://localhost:8321
+name: three-t-ov-hell
+
 services:
   test:
     image: node:22-alpine

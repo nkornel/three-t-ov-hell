@@ -18,9 +18,10 @@ Creating the public repository and enabling Pages are outward-facing actions: co
 
 2026-10-08: The publish workflow is committed at `.github/workflows/publish.yml`: a push to `main` runs `docker compose run --rm test` and, only if that passes, publishes the `site/` folder to GitHub Pages. It has been linted with actionlint but has never run, because the repository does not exist yet.
 
-The maintainer approved creating the public repository `nkornel/toiletovhell`, publishing at https://nkornel.github.io/toiletovhell/, and keeping `.scratch/` in the repository. Creation was refused: the GitHub token on the maintainer's machine is a fine-grained personal access token that cannot create repositories. No acceptance criterion is ticked yet. What remains:
+The maintainer created the public repository `nkornel/three-t-ov-hell` themselves, because the GitHub token on their machine is a fine-grained personal access token that cannot create repositories, and approved publishing at https://nkornel.github.io/three-t-ov-hell/ with `.scratch/` kept in the repository. The project was renamed from `toiletovhell` to `three-t-ov-hell` to match; the local store's keys changed with it, so anything kept by an earlier local preview is no longer read.
 
-1. Create the public repository `nkornel/toiletovhell`, empty, with default branch `main`.
-2. In its settings, set the Pages source to "GitHub Actions". "Deploy from a branch" would serve the whole repository, `.scratch/` included.
-3. Push `main`. The token used must be allowed to write workflow files.
-4. Check that the run publishes, that the published address behaves like the local preview, and that a failing test publishes nothing.
+The same token is refused when pushing to the repository and when enabling Pages, so nothing has been pushed and no acceptance criterion is ticked yet. The remote `origin` is set locally. What remains:
+
+1. In the repository's settings, set the Pages source to "GitHub Actions". "Deploy from a branch" would serve the whole repository, `.scratch/` included.
+2. Push `main` with credentials that may write contents and workflow files to the repository.
+3. Check that the run publishes, that the published address behaves like the local preview, and that a failing test publishes nothing.
