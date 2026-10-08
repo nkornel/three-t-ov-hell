@@ -3,33 +3,117 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Toilet Time Tracker</title>
+    <title>The 3 T's ov Hell</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=VT323&display=swap"
+    />
+    <link rel="stylesheet" href="tokens.css" />
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="src/main.js"></script>
   </head>
   <body>
-    <header>
-      <h1>Toilet Time Tracker</h1>
-      <p id="message" role="status" aria-live="polite"></p>
-    </header>
+    <!-- Icons, drawn on a 16×16 pixel grid. The screen refers to them by id. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-play" viewBox="0 0 16 16"><path d="M4 2h2v1h2v1h2v1h2v1h1v1h1v2h-1v1h-1v1h-2v1H8v1H6v1H4z" /></symbol>
+      <symbol id="i-stop" viewBox="0 0 16 16"><path d="M3 3h10v10H3z" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7 1h2v2h1v3h1v3h1v3h1v3H3v-3h1V9h1V6h1V3h1zM7 5v5h2V5zm0 6v2h2v-2z" /></symbol>
+      <symbol id="i-hourglass" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3 1h10v2h-1v3h-1v1h-1v2h1v1h1v3h1v2H3v-2h1v-3h1V9h1V7H5V6H4V3H3zm3 2v2h1v1h2V5h1V3zm1 8v1H6v1h4v-1H9v-1z" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z" /></symbol>
+      <symbol id="i-flag" viewBox="0 0 16 16"><path d="M2 1h2v14H2zM5 2h8v1h1v1h-1v1h-1v1h1v1h1v1H5z" /></symbol>
+      <symbol id="i-wheel" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7 0h2v2h1v1h1V2h2v2h-1v1h1v1h2v2h-2v2h-1v1h1v2h-2v-1h-1v1H9v2H7v-2H6v-1H5v1H3v-2h1v-1H3V8H1V6h2V5h1V4H3V2h2v1h1V2h1zm-1 6v4h4V6z" /></symbol>
+    </svg>
 
-    <main>
-      <section aria-labelledby="colleagues-heading">
-        <h2 id="colleagues-heading">Colleagues</h2>
-        <ul id="colleagues"></ul>
-        <p id="no-colleagues" hidden>No colleagues yet. Add the first one below.</p>
-        <form id="add-colleague" autocomplete="off">
-          <label for="alias">Alias</label>
-          <input id="alias" name="alias" required />
-          <button type="submit">Add colleague</button>
-        </form>
-      </section>
+    <div class="app-frame">
+      <header class="hud theme-dark">
+        <div class="brand">
+          <img class="logo" src="logo.png" width="448" height="512" alt="" />
+          <div>
+            <h1 class="wordmark">The <em>3 T's</em> ov Hell</h1>
+            <p class="tagline">Toilet Time Tracker</p>
+          </div>
+        </div>
+      </header>
 
-      <section aria-labelledby="leaderboard-heading">
-        <h2 id="leaderboard-heading">Leaderboard <span id="month"></span></h2>
-        <ol id="leaderboard"></ol>
-        <p id="no-leaderboard" hidden>No colleagues on the leaderboard yet.</p>
-      </section>
-    </main>
+      <div class="refusal app-message" id="message" role="alert" hidden>
+        <svg class="ic" aria-hidden="true"><use href="#i-alert" /></svg>
+        <span id="message-text"></span>
+      </div>
+
+      <main class="main-grid">
+        <section class="panel" aria-labelledby="colleagues-heading">
+          <div class="panel-head">
+            <h2 class="panel-title" id="colleagues-heading">Colleagues</h2>
+            <span class="panel-count" id="colleague-count"></span>
+          </div>
+          <ul class="clist" id="colleagues"></ul>
+          <div class="empty" id="no-colleagues" hidden>
+            <div class="art"><svg class="ic" aria-hidden="true"><use href="#i-wheel" /></svg></div>
+            <h3>No colleagues aboard yet</h3>
+            <p>Add the first colleague below by giving them an alias. Their start button appears here.</p>
+          </div>
+          <form class="addform" id="add-colleague" autocomplete="off" aria-labelledby="add-heading">
+            <h3 id="add-heading">
+              <svg class="ic" aria-hidden="true"><use href="#i-plus" /></svg>Add colleague
+            </h3>
+            <div class="field" id="alias-field">
+              <label for="alias">Alias</label>
+              <input
+                class="input"
+                id="alias"
+                name="alias"
+                required
+                spellcheck="false"
+                placeholder="e.g. Captain Spreadsheet"
+                aria-describedby="alias-error alias-hint"
+              />
+              <div class="field-error" id="alias-error" role="alert" hidden>
+                <svg class="ic" aria-hidden="true"><use href="#i-alert" /></svg>
+                <span id="alias-error-text"></span>
+              </div>
+              <div class="field-foot"><span id="alias-hint">Shown on the leaderboard.</span></div>
+            </div>
+            <button class="btn btn-primary" type="submit">
+              <svg class="ic" aria-hidden="true"><use href="#i-plus" /></svg>Add colleague
+            </button>
+          </form>
+        </section>
+
+        <section class="panel" aria-labelledby="leaderboard-heading">
+          <div class="panel-head">
+            <h2 class="panel-title" id="leaderboard-heading">Leaderboard</h2>
+            <span class="panel-count" id="month"></span>
+          </div>
+          <div class="lb-banner">
+            <span class="live-dot" aria-hidden="true"></span>
+            <strong>In progress</strong>
+            <span>Totals update live. The winner is announced when the month ends.</span>
+          </div>
+          <div class="lb-body">
+            <table class="lb-table" id="leaderboard-table">
+              <caption class="sr-only">
+                Leaderboard for the current month
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" class="lb-rank">Rank</th>
+                  <th scope="col">Colleague</th>
+                  <th scope="col" class="num">Total</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard"></tbody>
+            </table>
+            <div class="empty" id="no-leaderboard" hidden>
+              <div class="art"><svg class="ic" aria-hidden="true"><use href="#i-flag" /></svg></div>
+              <h3>The leaderboard is empty</h3>
+              <p>No visits yet this month. The first colleague to step out takes the lead.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   </body>
 </html>

@@ -38,6 +38,18 @@ test('an added colleague is listed by alias', async () => {
   );
 });
 
+test('colleagues are listed by alias, whatever order they were added in', async () => {
+  const { tracker } = await setup();
+  await tracker.addColleague('Mango');
+  await tracker.addColleague('bones');
+  await tracker.addColleague('Captain Flush');
+
+  assert.deepEqual(
+    tracker.colleagues().map((colleague) => colleague.alias),
+    ['bones', 'Captain Flush', 'Mango'],
+  );
+});
+
 test('a started visit runs and its timer follows the clock', async () => {
   const { clock, tracker } = await setup();
   const { id } = await tracker.addColleague('Captain Flush');
@@ -68,7 +80,7 @@ test('a stopped visit is no longer running and counts toward the leaderboard', a
 
   assert.equal(tracker.colleagues()[0].runningVisit, null);
   assert.deepEqual(tracker.leaderboard(), [
-    { colleagueId: id, alias: 'Captain Flush', totalSeconds: 240 },
+    { colleagueId: id, alias: 'Captain Flush', totalSeconds: 240, out: false, leading: true },
   ]);
 });
 
@@ -91,10 +103,54 @@ test('the leaderboard puts the most time first and counts running visits', async
 
   // Bones 360 s finished; Mango 310 s and still out; Flush 120 s finished.
   assert.deepEqual(tracker.leaderboard(), [
-    { colleagueId: bones.id, alias: 'Bones', totalSeconds: 360 },
-    { colleagueId: mango.id, alias: 'Mango', totalSeconds: 310 },
-    { colleagueId: flush.id, alias: 'Captain Flush', totalSeconds: 120 },
+    { colleagueId: bones.id, alias: 'Bones', totalSeconds: 360, out: false, leading: true },
+    { colleagueId: mango.id, alias: 'Mango', totalSeconds: 310, out: true, leading: false },
+    { colleagueId: flush.id, alias: 'Captain Flush', totalSeconds: 120, out: false, leading: false },
   ]);
+});
+
+test('the leaderboard shows who is out', async () => {
+  const { clock, tracker } = await setup();
+  const flush = await tracker.addColleague('Captain Flush');
+  await tracker.addColleague('Bones');
+
+  await tracker.startVisit(flush.id);
+  clock.advance(30);
+
+  assert.deepEqual(
+    tracker.leaderboard().map((row) => [row.alias, row.out]),
+    [
+      ['Captain Flush', true],
+      ['Bones', false],
+    ],
+  );
+
+  await tracker.stopVisit(flush.id);
+  assert.equal(tracker.leaderboard()[0].out, false);
+});
+
+test('whoever has the most time is leading, and nobody leads before any time is recorded', async () => {
+  const { clock, tracker } = await setup();
+  const flush = await tracker.addColleague('Captain Flush');
+  const bones = await tracker.addColleague('Bones');
+  const leaders = () =>
+    tracker
+      .leaderboard()
+      .filter((row) => row.leading)
+      .map((row) => row.alias);
+
+  assert.deepEqual(leaders(), []);
+
+  await tracker.startVisit(flush.id);
+  clock.advance(60);
+  await tracker.stopVisit(flush.id);
+  await tracker.startVisit(bones.id);
+  clock.advance(20);
+  assert.deepEqual(leaders(), ['Captain Flush']);
+
+  // Bones is still out and overtakes at 61 seconds.
+  clock.advance(41);
+  assert.deepEqual(leaders(), ['Bones']);
 });
 
 test('a colleague who is already out cannot start a second visit', async () => {
@@ -137,8 +193,8 @@ test('reopening the app keeps colleagues, finished visits and running visits', a
   clock.advance(40);
 
   assert.deepEqual(reopened.leaderboard(), [
-    { colleagueId: flush.id, alias: 'Captain Flush', totalSeconds: 90 },
-    { colleagueId: bones.id, alias: 'Bones', totalSeconds: 60 },
+    { colleagueId: flush.id, alias: 'Captain Flush', totalSeconds: 90, out: false, leading: true },
+    { colleagueId: bones.id, alias: 'Bones', totalSeconds: 60, out: true, leading: false },
   ]);
   const out = reopened.colleagues().find((colleague) => colleague.id === bones.id);
   assert.equal(out?.runningVisit?.elapsedSeconds, 60);

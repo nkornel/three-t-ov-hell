@@ -121,7 +121,7 @@ export async function createTracker({ clock, store }) {
       await store.saveVisits(month, await visitsIn(month));
     },
 
-    /** The current month's leaderboard. */
+    /** The current month's leaderboard: most time first, with who is leading and who is out. */
     leaderboard() {
       const now = clock.now();
       const nowInstant = toInstant(now);
@@ -132,23 +132,34 @@ export async function createTracker({ clock, store }) {
           if (visit.colleagueId !== colleague.id) continue;
           totalSeconds += secondsBetween(visit.startedAt, visit.endedAt ?? nowInstant);
         }
-        return { colleagueId: colleague.id, alias: colleague.alias, totalSeconds };
-      });
-      return rows.sort((a, b) => b.totalSeconds - a.totalSeconds);
-    },
-
-    colleagues() {
-      const now = toInstant(clock.now());
-      return colleagues.map((colleague) => {
-        const running = runningVisitOf(colleague.id);
         return {
-          ...colleague,
-          runningVisit: running && {
-            startedAt: running.startedAt,
-            elapsedSeconds: secondsBetween(running.startedAt, now),
-          },
+          colleagueId: colleague.id,
+          alias: colleague.alias,
+          totalSeconds,
+          out: runningVisitOf(colleague.id) !== null,
         };
       });
+      rows.sort((a, b) => b.totalSeconds - a.totalSeconds);
+      // Whoever has the most time is leading, once anybody has any.
+      const most = rows[0]?.totalSeconds ?? 0;
+      return rows.map((row) => ({ ...row, leading: most > 0 && row.totalSeconds === most }));
+    },
+
+    /** The colleagues in alias order, each with their running visit if they are out. */
+    colleagues() {
+      const now = toInstant(clock.now());
+      return colleagues
+        .map((colleague) => {
+          const running = runningVisitOf(colleague.id);
+          return {
+            ...colleague,
+            runningVisit: running && {
+              startedAt: running.startedAt,
+              elapsedSeconds: secondsBetween(running.startedAt, now),
+            },
+          };
+        })
+        .sort((a, b) => a.alias.localeCompare(b.alias, 'en', { sensitivity: 'base' }));
     },
   };
 }
