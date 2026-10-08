@@ -24,6 +24,11 @@
       <symbol id="i-hourglass" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3 1h10v2h-1v3h-1v1h-1v2h1v1h1v3h1v2H3v-2h1v-3h1V9h1V7H5V6H4V3H3zm3 2v2h1v1h2V5h1V3zm1 8v1H6v1h4v-1H9v-1z" /></symbol>
       <symbol id="i-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z" /></symbol>
       <symbol id="i-flag" viewBox="0 0 16 16"><path d="M2 1h2v14H2zM5 2h8v1h1v1h-1v1h-1v1h1v1h1v1H5z" /></symbol>
+      <symbol id="i-check" viewBox="0 0 16 16"><path d="M13 3h2v2h-1v1h-1v1h-1v1h-1v1h-1v1H9v1H8v1H7v1H6v-1H5v-1H4v-1H3V9H2V7h2v1h1v1h1v1h1V9h1V8h1V7h1V6h1V5h1V4h1z" /></symbol>
+      <symbol id="i-dots" viewBox="0 0 16 16"><path d="M1 7h3v3H1zM6.5 7h3v3h-3zM12 7h3v3h-3z" /></symbol>
+      <symbol id="i-archive" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 2h14v4H1zM2 7h12v8H2zm4 2v2h4V9z" /></symbol>
+      <symbol id="i-tag" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 1h7v1h1v1h1v1h1v1h1v1h1v1h1v2h-1v1h-1v1h-1v1h-1v1H9v1H7v-1H6v-1H5v-1H4v-1H3V9H2V8H1zm3 2v2h2V3z" /></symbol>
+      <symbol id="i-x" viewBox="0 0 16 16"><path d="M2 2h3v1h1v1h1v1h2V4h1V3h1V2h3v3h-1v1h-1v1h-1v2h1v1h1v1h1v3h-3v-1h-1v-1H9v-1H7v1H6v1H5v1H2v-3h1v-1h1V9h1V7H4V6H3V5H2z" /></symbol>
       <symbol id="i-wheel" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7 0h2v2h1v1h1V2h2v2h-1v1h1v1h2v2h-2v2h-1v1h1v2h-2v-1h-1v1H9v2H7v-2H6v-1H5v1H3v-2h1v-1H3V8H1V6h2V5h1V4H3V2h2v1h1V2h1zm-1 6v4h4V6z" /></symbol>
     </svg>
 
@@ -51,26 +56,28 @@
             <h3>No colleagues aboard yet</h3>
             <p>Add the first colleague below by giving them an alias. Their start button appears here.</p>
           </div>
-          <form class="addform" id="add-colleague" autocomplete="off" aria-labelledby="add-heading">
+          <form class="addform" id="add-colleague" autocomplete="off" novalidate aria-labelledby="add-heading">
             <h3 id="add-heading">
               <svg class="ic" aria-hidden="true"><use href="#i-plus" /></svg>Add colleague
             </h3>
-            <div class="field" id="alias-field">
+            <div class="field">
               <label for="alias">Alias</label>
               <input
                 class="input"
                 id="alias"
                 name="alias"
-                required
                 spellcheck="false"
                 placeholder="e.g. Captain Spreadsheet"
-                aria-describedby="alias-error alias-hint"
+                aria-describedby="alias-error alias-hint alias-count"
               />
               <div class="field-error" id="alias-error" role="alert" hidden>
                 <svg class="ic" aria-hidden="true"><use href="#i-alert" /></svg>
-                <span id="alias-error-text"></span>
+                <span></span>
               </div>
-              <div class="field-foot"><span id="alias-hint">Shown on the leaderboard.</span></div>
+              <div class="field-foot">
+                <span class="hint" id="alias-hint"></span>
+                <span class="counter" id="alias-count" aria-live="polite"></span>
+              </div>
             </div>
             <button class="btn btn-primary" type="submit">
               <svg class="ic" aria-hidden="true"><use href="#i-plus" /></svg>Add colleague
@@ -111,5 +118,67 @@
         </section>
       </main>
     </div>
+
+    <dialog class="sheet" id="alias-dialog" aria-labelledby="alias-dialog-title">
+      <form class="panel dialog-small" autocomplete="off" novalidate>
+        <div class="panel-head">
+          <h2 class="panel-title" id="alias-dialog-title">Change alias</h2>
+          <button class="btn btn-icon" type="button" data-action="close" aria-label="Close">
+            <svg class="ic" aria-hidden="true"><use href="#i-x" /></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="field">
+            <label for="new-alias">Alias</label>
+            <input
+              class="input"
+              id="new-alias"
+              name="alias"
+              spellcheck="false"
+              aria-describedby="new-alias-error new-alias-hint new-alias-count"
+            />
+            <div class="field-error" id="new-alias-error" role="alert" hidden>
+              <svg class="ic" aria-hidden="true"><use href="#i-alert" /></svg>
+              <span></span>
+            </div>
+            <div class="field-foot">
+              <span class="hint" id="new-alias-hint"></span>
+              <span class="counter" id="new-alias-count" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn btn-ghost" type="button" data-action="close">Cancel</button>
+            <button class="btn btn-primary" type="submit">
+              <svg class="ic" aria-hidden="true"><use href="#i-check" /></svg>Save alias
+            </button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="sheet" id="archive-dialog" aria-labelledby="archive-dialog-title">
+      <form class="panel dialog-small" novalidate>
+        <div class="panel-head">
+          <h2 class="panel-title" id="archive-dialog-title"></h2>
+          <button class="btn btn-icon" type="button" data-action="close" aria-label="Close">
+            <svg class="ic" aria-hidden="true"><use href="#i-x" /></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <p id="archive-dialog-text"></p>
+          <div class="refusal" id="archive-refusal" role="alert" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#i-alert" /></svg>
+            <span></span>
+          </div>
+          <div class="dialog-actions">
+            <!-- Archiving cannot be undone, so the dialog opens on Cancel. -->
+            <button class="btn btn-ghost" type="button" data-action="close" autofocus>Cancel</button>
+            <button class="btn btn-danger" type="submit">
+              <svg class="ic" aria-hidden="true"><use href="#i-archive" /></svg>Archive
+            </button>
+          </div>
+        </div>
+      </form>
+    </dialog>
   </body>
 </html>

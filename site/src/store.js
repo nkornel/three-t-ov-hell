@@ -2,7 +2,11 @@
  * The store port: what the tracker needs from wherever the game is kept.
  * Adapters implement it; this module holds only the types.
  *
- * @typedef {{ id: string, alias: string }} Colleague
+ * @typedef {object} Colleague
+ * @property {string} id
+ * @property {string} alias
+ * @property {string | null} [archivedAt] The instant they were archived. Empty while they are active, and missing from colleagues saved before archiving existed.
+ *
  * @typedef {{ id: string, colleagueId: string, startedAt: string, endedAt: string | null }} Visit
  *
  * @typedef {object} Store

@@ -182,14 +182,47 @@ input {
   background: var(--c-run-hover);
 }
 
-.btn-stop {
+.btn-stop,
+.btn-danger {
   background: var(--c-danger);
   color: var(--c-on-danger);
   border-color: var(--c-danger-edge);
 }
 
-.btn-stop:hover:not(:disabled) {
+.btn-stop:hover:not(:disabled),
+.btn-danger:hover:not(:disabled) {
   background: var(--c-danger-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--c-border);
+  box-shadow: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--c-surface-sunken);
+}
+
+.btn-icon {
+  width: var(--tap);
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--c-text-muted);
+}
+
+.btn-icon:hover:not(:disabled),
+.btn-icon[aria-expanded="true"] {
+  border-color: var(--c-border);
+  color: var(--c-text);
+  background: var(--c-surface-sunken);
+}
+
+.btn-icon .ic {
+  width: 18px;
+  height: 18px;
 }
 
 /* Start and stop share one size, so the click target never moves. */
@@ -244,6 +277,11 @@ input {
   border-style: dashed;
 }
 
+.tag-quiet {
+  color: var(--c-text-muted);
+  border-color: var(--c-border);
+}
+
 /* ---------- colleague rows ---------- */
 
 .clist {
@@ -257,8 +295,8 @@ input {
   display: grid;
   align-items: center;
   gap: var(--sp-2) var(--sp-4);
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  grid-template-areas: "main timer act";
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "main timer act more";
   padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-5);
   border-bottom: var(--bw-1) solid var(--c-divider);
 }
@@ -312,6 +350,53 @@ input {
 
 .crow .btn-timer {
   grid-area: act;
+}
+
+.crow .more {
+  grid-area: more;
+}
+
+/* ---------- row menu ---------- */
+
+.menu {
+  position: absolute;
+  right: var(--sp-4);
+  top: calc(100% - var(--sp-3));
+  z-index: 20;
+  min-width: 220px;
+  margin: 0;
+  padding: var(--sp-1);
+  list-style: none;
+  background: var(--c-surface);
+  border: var(--bw-2) solid var(--c-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--sp-3);
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font: 600 var(--fs-md) var(--font-display);
+}
+
+.menu button:hover {
+  background: var(--c-surface-sunken);
+}
+
+.menu .sep {
+  margin: var(--sp-1) 0;
+  border-top: var(--bw-1) solid var(--c-divider);
+}
+
+.menu .danger {
+  color: var(--c-danger-ink);
 }
 
 .crow[data-state="out"] {
@@ -396,6 +481,16 @@ input {
   color: var(--c-text-muted);
 }
 
+.counter {
+  margin-left: auto;
+  font: var(--fs-lg) / 1 var(--font-digits);
+}
+
+.counter.over {
+  color: var(--c-danger-ink);
+  font-weight: 700;
+}
+
 .has-error .input {
   border: var(--bw-2) solid var(--c-danger-ink);
 }
@@ -418,6 +513,45 @@ input {
 
 .addform .btn-primary {
   margin-top: var(--sp-4);
+}
+
+/* ---------- dialogs ---------- */
+
+dialog.sheet {
+  width: 100%;
+  max-width: min(900px, calc(100vw - 24px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--c-text);
+}
+
+dialog.sheet::backdrop {
+  background: var(--c-overlay);
+}
+
+.dialog-small {
+  max-width: 560px;
+  margin: auto;
+}
+
+dialog.sheet .panel-title {
+  font-size: var(--fs-lg);
+}
+
+.sheet-body {
+  padding: var(--sp-4);
+}
+
+.sheet-body > p {
+  margin: 0 0 var(--sp-3);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
 }
 
 /* ---------- leaderboard ---------- */
@@ -583,10 +717,14 @@ td.lb-rank {
   .crow {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      "main main"
+      "main more"
       "timer act";
     padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
     gap: var(--sp-2) var(--sp-3);
+  }
+
+  .crow .more {
+    justify-self: end;
   }
 
   .crow-timer {

@@ -27,6 +27,11 @@ async function setup(iso = '2026-10-08T09:00:00Z') {
   return { clock, store, tracker };
 }
 
+/** The leaderboard as pairs of alias and total seconds, in its order. */
+function totals(tracker) {
+  return tracker.leaderboard().map((row) => [row.alias, row.totalSeconds]);
+}
+
 test('an added colleague is listed by alias', async () => {
   const { tracker } = await setup();
 
@@ -36,6 +41,204 @@ test('an added colleague is listed by alias', async () => {
     tracker.colleagues().map((colleague) => colleague.alias),
     ['Captain Flush'],
   );
+});
+
+test('an alias is trimmed', async () => {
+  const { tracker } = await setup();
+
+  const added = await tracker.addColleague('  Captain Flush  ');
+
+  assert.equal(added.alias, 'Captain Flush');
+  assert.equal(tracker.colleagues()[0].alias, 'Captain Flush');
+});
+
+test('an empty alias is refused', async () => {
+  const { tracker } = await setup();
+
+  await assert.rejects(tracker.addColleague(''), /Type an alias/);
+  await assert.rejects(tracker.addColleague('   '), /Type an alias/);
+
+  assert.deepEqual(tracker.colleagues(), []);
+});
+
+test('an alias longer than thirty characters is refused', async () => {
+  const { tracker } = await setup();
+  const thirty = 'The Quiet Kraken of Floor Nine';
+  assert.equal(thirty.length, 30);
+
+  await assert.rejects(
+    tracker.addColleague(`${thirty}!`),
+    /at most 30 characters. This one has 31/,
+  );
+  await tracker.addColleague(`  ${thirty}  `);
+
+  assert.deepEqual(
+    tracker.colleagues().map((colleague) => colleague.alias),
+    [thirty],
+  );
+});
+
+test('an alias already in use is refused, whatever its letter case', async () => {
+  const { tracker } = await setup();
+  await tracker.addColleague('Captain Flush');
+
+  await assert.rejects(tracker.addColleague('captain FLUSH'), /already in use/);
+  await assert.rejects(tracker.addColleague(' Captain Flush '), /already in use/);
+
+  assert.equal(tracker.colleagues().length, 1);
+});
+
+test('a changed alias appears everywhere and survives reopening the app', async () => {
+  const { clock, store, tracker } = await setup();
+  const { id } = await tracker.addColleague('Captian Flush');
+  await tracker.startVisit(id);
+  clock.advance(60);
+  await tracker.stopVisit(id);
+
+  await tracker.renameColleague(id, '  Captain Flush ');
+
+  assert.equal(tracker.colleagues()[0].alias, 'Captain Flush');
+  assert.equal(tracker.leaderboard()[0].alias, 'Captain Flush');
+  const reopened = await createTracker({ clock, store });
+  assert.equal(reopened.colleagues()[0].alias, 'Captain Flush');
+});
+
+test('a changed alias follows the same rules, but a colleague may keep their own', async () => {
+  const { tracker } = await setup();
+  const flush = await tracker.addColleague('Captain Flush');
+  await tracker.addColleague('Bones');
+
+  await assert.rejects(tracker.renameColleague(flush.id, 'bones'), /already in use/);
+  await assert.rejects(tracker.renameColleague(flush.id, '  '), /Type an alias/);
+  await assert.rejects(
+    tracker.renameColleague(flush.id, 'Captain Flush of the Seven Seas'),
+    /at most 30 characters. This one has 31/,
+  );
+  assert.equal(tracker.colleagues()[1].alias, 'Captain Flush');
+
+  await tracker.renameColleague(flush.id, 'CAPTAIN FLUSH');
+  assert.equal(tracker.colleagues()[1].alias, 'CAPTAIN FLUSH');
+});
+
+test('an archived colleague is no longer listed, even after reopening the app', async () => {
+  const { clock, store, tracker } = await setup();
+  const flush = await tracker.addColleague('Captain Flush');
+  await tracker.addColleague('Bones');
+
+  await tracker.archiveColleague(flush.id);
+
+  const aliases = (/** @type {typeof tracker} */ opened) =>
+    opened.colleagues().map((colleague) => colleague.alias);
+  assert.deepEqual(aliases(tracker), ['Bones']);
+  assert.deepEqual(aliases(await createTracker({ clock, store })), ['Bones']);
+});
+
+test('a colleague who is out cannot be archived', async () => {
+  const { clock, tracker } = await setup();
+  const { id } = await tracker.addColleague('Captain Flush');
+  await tracker.startVisit(id);
+  clock.advance(30);
+
+  await assert.rejects(tracker.archiveColleague(id), /Captain Flush is out/);
+  assert.equal(tracker.colleagues().length, 1);
+
+  await tracker.stopVisit(id);
+  await tracker.archiveColleague(id);
+  assert.equal(tracker.colleagues().length, 0);
+});
+
+test('an archived colleague stays on the leaderboard of a month in which they have a visit', async () => {
+  const { clock, store, tracker } = await setup('2026-10-20T09:00:00Z');
+  const flush = await tracker.addColleague('Captain Flush');
+  await tracker.addColleague('Bones');
+  const mango = await tracker.addColleague('Mango');
+  await tracker.startVisit(flush.id);
+  clock.advance(100);
+  await tracker.stopVisit(flush.id);
+
+  await tracker.archiveColleague(flush.id);
+  await tracker.archiveColleague(mango.id);
+
+  // Mango never had a visit, so only Captain Flush stays.
+  assert.deepEqual(
+    tracker.leaderboard().map((row) => [row.alias, row.archived]),
+    [
+      ['Captain Flush', true],
+      ['Bones', false],
+    ],
+  );
+
+  clock.set('2026-11-03T09:00:00Z');
+  const inNovember = await createTracker({ clock, store });
+  assert.deepEqual(
+    inNovember.leaderboard().map((row) => row.alias),
+    ['Bones'],
+  );
+});
+
+test('the alias of an archived colleague can be used again', async () => {
+  const { tracker } = await setup();
+  const first = await tracker.addColleague('Captain Flush');
+  const bones = await tracker.addColleague('Bones');
+  await tracker.archiveColleague(first.id);
+
+  await tracker.renameColleague(bones.id, 'captain flush');
+  await tracker.renameColleague(bones.id, 'Bones');
+  const second = await tracker.addColleague('Captain Flush');
+
+  assert.notEqual(second.id, first.id);
+  assert.deepEqual(
+    tracker.colleagues().map((colleague) => colleague.alias),
+    ['Bones', 'Captain Flush'],
+  );
+});
+
+test('a visit cannot be started for an archived colleague', async () => {
+  const { tracker } = await setup();
+  const { id } = await tracker.addColleague('Captain Flush');
+  await tracker.archiveColleague(id);
+
+  await assert.rejects(tracker.startVisit(id), /Captain Flush has been archived/);
+  assert.deepEqual(tracker.leaderboard(), []);
+});
+
+test('an archived colleague cannot be archived again or given a new alias', async () => {
+  const { clock, store, tracker } = await setup('2026-10-08T09:00:00Z');
+  const { id } = await tracker.addColleague('Captain Flush');
+  await tracker.archiveColleague(id);
+  clock.advance(60);
+
+  await assert.rejects(tracker.archiveColleague(id), /Captain Flush has been archived/);
+  await assert.rejects(tracker.renameColleague(id, 'Admiral Flush'), /has been archived/);
+
+  assert.deepEqual(await store.loadColleagues(), [
+    { id, alias: 'Captain Flush', archivedAt: '2026-10-08T09:00:00.000Z' },
+  ]);
+});
+
+test('an emoji counts as one character of an alias', async () => {
+  const { tracker } = await setup();
+
+  await tracker.addColleague('🦜'.repeat(30));
+  await assert.rejects(tracker.addColleague('🦜'.repeat(31)), /This one has 31/);
+
+  assert.equal(tracker.colleagues().length, 1);
+});
+
+test('a colleague saved before archiving existed is active and can be archived', async () => {
+  const clock = fakeClock('2026-10-08T09:00:00Z');
+  const store = createLocalStore();
+  await store.saveColleagues([{ id: 'c1', alias: 'Captain Flush' }]);
+  const tracker = await createTracker({ clock, store });
+
+  assert.equal(tracker.colleagues()[0].alias, 'Captain Flush');
+  await assert.rejects(tracker.addColleague('captain flush'), /already in use/);
+  await tracker.startVisit('c1');
+  clock.advance(30);
+  await tracker.stopVisit('c1');
+
+  await tracker.archiveColleague('c1');
+  assert.deepEqual(tracker.colleagues(), []);
 });
 
 test('colleagues are listed by alias, whatever order they were added in', async () => {
@@ -79,9 +282,7 @@ test('a stopped visit is no longer running and counts toward the leaderboard', a
   clock.advance(600);
 
   assert.equal(tracker.colleagues()[0].runningVisit, null);
-  assert.deepEqual(tracker.leaderboard(), [
-    { colleagueId: id, alias: 'Captain Flush', totalSeconds: 240, out: false, leading: true },
-  ]);
+  assert.deepEqual(totals(tracker), [['Captain Flush', 240]]);
 });
 
 test('the leaderboard puts the most time first and counts running visits', async () => {
@@ -102,10 +303,10 @@ test('the leaderboard puts the most time first and counts running visits', async
   clock.advance(10);
 
   // Bones 360 s finished; Mango 310 s and still out; Flush 120 s finished.
-  assert.deepEqual(tracker.leaderboard(), [
-    { colleagueId: bones.id, alias: 'Bones', totalSeconds: 360, out: false, leading: true },
-    { colleagueId: mango.id, alias: 'Mango', totalSeconds: 310, out: true, leading: false },
-    { colleagueId: flush.id, alias: 'Captain Flush', totalSeconds: 120, out: false, leading: false },
+  assert.deepEqual(totals(tracker), [
+    ['Bones', 360],
+    ['Mango', 310],
+    ['Captain Flush', 120],
   ]);
 });
 
@@ -192,9 +393,9 @@ test('reopening the app keeps colleagues, finished visits and running visits', a
   const reopened = await createTracker({ clock, store });
   clock.advance(40);
 
-  assert.deepEqual(reopened.leaderboard(), [
-    { colleagueId: flush.id, alias: 'Captain Flush', totalSeconds: 90, out: false, leading: true },
-    { colleagueId: bones.id, alias: 'Bones', totalSeconds: 60, out: true, leading: false },
+  assert.deepEqual(totals(reopened), [
+    ['Captain Flush', 90],
+    ['Bones', 60],
   ]);
   const out = reopened.colleagues().find((colleague) => colleague.id === bones.id);
   assert.equal(out?.runningVisit?.elapsedSeconds, 60);

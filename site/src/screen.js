@@ -1,4 +1,4 @@
-import { Refused } from './tracker.js';
+import { MAX_ALIAS_LENGTH, Refused, aliasLength } from './tracker.js';
 
 /**
  * @typedef {import('./tracker.js').Tracker} Tracker
@@ -111,6 +111,73 @@ const VISIT_ACTIONS = {
 };
 
 /**
+ * One entry of a colleague's "more" menu.
+ * @param {string} action
+ * @param {string} iconName
+ * @param {string} label
+ * @param {string} [className]
+ */
+function menuItem(action, iconName, label, className = '') {
+  const button = element('button', className, icon(iconName), label);
+  button.setAttribute('type', 'button');
+  button.setAttribute('role', 'menuitem');
+  button.dataset.action = action;
+  const item = element('li', '', button);
+  item.setAttribute('role', 'none');
+  return item;
+}
+
+/**
+ * Looks after one alias field: its hint, its character counter and the
+ * refusal shown beside it. The page has one in the add-colleague form and one
+ * in the change-alias dialog.
+ *
+ * @param {HTMLElement} field
+ */
+function aliasField(field) {
+  /** @type {HTMLInputElement} */
+  const input = find(field, 'input');
+  const error = find(field, '.field-error');
+  const errorText = find(error, 'span');
+  const counter = find(field, '.counter');
+  find(field, '.hint').textContent =
+    `Shown on the leaderboard. Up to ${MAX_ALIAS_LENGTH} characters.`;
+
+  function showCount() {
+    const length = aliasLength(input.value);
+    counter.textContent = `${length}/${MAX_ALIAS_LENGTH}`;
+    counter.classList.toggle('over', length > MAX_ALIAS_LENGTH);
+  }
+
+  /** @param {string} reason why the alias was refused, or '' to clear it */
+  function explain(reason) {
+    errorText.textContent = reason;
+    error.hidden = reason === '';
+    field.classList.toggle('has-error', reason !== '');
+    if (reason === '') input.removeAttribute('aria-invalid');
+    else input.setAttribute('aria-invalid', 'true');
+  }
+
+  input.addEventListener('input', () => {
+    showCount();
+    // A refusal for being too long stays until the alias fits again.
+    if (aliasLength(input.value) <= MAX_ALIAS_LENGTH) explain('');
+  });
+  showCount();
+
+  return {
+    input,
+    explain,
+    /** @param {string} alias */
+    fill(alias) {
+      input.value = alias;
+      explain('');
+      showCount();
+    },
+  };
+}
+
+/**
  * Draws the tracker on the page and turns clicks into tracker commands.
  *
  * @param {{ tracker: Tracker, clock: Clock, root: ParentNode }} options
@@ -127,24 +194,31 @@ export function mountScreen({ tracker, clock, root }) {
   const messageText = find(root, '#message-text');
   /** @type {HTMLFormElement} */
   const addForm = find(root, '#add-colleague');
-  const aliasField = find(root, '#alias-field');
-  /** @type {HTMLInputElement} */
-  const aliasInput = find(root, '#alias');
-  const aliasError = find(root, '#alias-error');
-  const aliasErrorText = find(root, '#alias-error-text');
+  const newColleagueAlias = aliasField(find(addForm, '.field'));
+  /** @type {HTMLDialogElement} */
+  const aliasDialog = find(root, '#alias-dialog');
+  const changedAlias = aliasField(find(aliasDialog, '.field'));
+  /** @type {HTMLDialogElement} */
+  const archiveDialog = find(root, '#archive-dialog');
+  const archiveTitle = find(archiveDialog, '#archive-dialog-title');
+  const archiveText = find(archiveDialog, '#archive-dialog-text');
+  const archiveRefusal = find(archiveDialog, '#archive-refusal');
   const monthFormat = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' });
+
+  /** The colleague a dialog is open for. */
+  let dialogColleagueId = '';
 
   /** @param {Colleagues[number]} colleague */
   function colleagueRow(colleague) {
     const running = colleague.runningVisit;
     const row = element('li', 'crow');
     row.dataset.state = running ? 'out' : 'idle';
+    row.dataset.colleagueId = colleague.id;
 
     // The line under the alias is there even when it is empty, so that the
     // row, and the button in it, stay put when a visit starts or stops.
     const meta = element('span', 'crow-meta');
     const timer = element('span', 'timer', timerText(running));
-    timer.dataset.colleagueId = colleague.id;
     if (running) {
       meta.append(
         marker('tag-run', 'hourglass', 'Out'),
@@ -159,15 +233,47 @@ export function mountScreen({ tracker, clock, root }) {
     const button = element('button', `btn btn-timer btn-${actionName}`, icon(action.icon), action.label);
     button.setAttribute('type', 'button');
     button.dataset.action = actionName;
-    button.dataset.colleagueId = colleague.id;
     button.setAttribute('aria-label', `${action.describe} ${colleague.alias}`);
+
+    const more = element('button', 'btn btn-icon more', icon('dots'));
+    more.setAttribute('type', 'button');
+    more.dataset.action = 'menu';
+    more.setAttribute('aria-haspopup', 'menu');
+    more.setAttribute('aria-expanded', 'false');
+    more.setAttribute('aria-label', `More for ${colleague.alias}`);
+
+    const separator = element('li', 'sep');
+    separator.setAttribute('role', 'none');
+    const menu = element(
+      'ul',
+      'menu',
+      menuItem('alias', 'tag', 'Change alias'),
+      separator,
+      menuItem('archive', 'archive', 'Archive', 'danger'),
+    );
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', `More for ${colleague.alias}`);
+    menu.hidden = true;
 
     row.append(
       element('div', 'crow-main', element('span', 'alias', colleague.alias), meta),
       element('div', 'crow-timer', timer),
       button,
+      more,
+      menu,
     );
     return row;
+  }
+
+  /**
+   * A colleague's row, if they have one.
+   * @param {string} colleagueId
+   * @returns {HTMLElement | undefined}
+   */
+  function rowOf(colleagueId) {
+    return [.../** @type {NodeListOf<HTMLElement>} */ (colleagueList.querySelectorAll('.crow'))].find(
+      (row) => row.dataset.colleagueId === colleagueId,
+    );
   }
 
   /** @param {Colleagues} colleagues */
@@ -180,10 +286,9 @@ export function mountScreen({ tracker, clock, root }) {
 
   /** @param {Colleagues} colleagues */
   function renderTimers(colleagues) {
-    const running = new Map(colleagues.map((colleague) => [colleague.id, colleague.runningVisit]));
-    for (const timer of colleagueList.querySelectorAll('.timer')) {
-      const visit = running.get(/** @type {HTMLElement} */ (timer).dataset.colleagueId ?? '');
-      timer.textContent = timerText(visit ?? null);
+    for (const colleague of colleagues) {
+      const timer = rowOf(colleague.id)?.querySelector('.timer');
+      if (timer) timer.textContent = timerText(colleague.runningVisit);
     }
   }
 
@@ -196,13 +301,12 @@ export function mountScreen({ tracker, clock, root }) {
     noLeaderboard.hidden = begun;
     leaderboardBody.replaceChildren(
       ...rows.map((row, index) => {
+        const markers = [];
+        if (row.leading) markers.push(marker('tag-leading', 'flag', 'Leading'));
+        if (row.out) markers.push(marker('tag-run', 'hourglass', 'Out'));
+        if (row.archived) markers.push(marker('tag-quiet', 'archive', 'Archived'));
         const who = element('td', 'lb-who', element('span', 'alias', row.alias));
-        if (row.leading || row.out) {
-          const markers = element('div', 'tags');
-          if (row.leading) markers.append(marker('tag-leading', 'flag', 'Leading'));
-          if (row.out) markers.append(marker('tag-run', 'hourglass', 'Out'));
-          who.append(markers);
-        }
+        if (markers.length > 0) who.append(element('div', 'tags', ...markers));
         const item = element(
           'tr',
           'lb-row',
@@ -228,72 +332,223 @@ export function mountScreen({ tracker, clock, root }) {
     message.hidden = text === '';
   }
 
-  /** @param {string} text */
-  function showAliasError(text) {
-    aliasErrorText.textContent = text;
-    aliasError.hidden = text === '';
-    aliasField.classList.toggle('has-error', text !== '');
-    if (text === '') aliasInput.removeAttribute('aria-invalid');
-    else aliasInput.setAttribute('aria-invalid', 'true');
-  }
-
   /**
    * Runs a tracker command and redraws. A refusal goes to `explain`, which by
-   * default is the message under the header.
+   * default is the message under the header; anything else that goes wrong
+   * is always reported there.
    *
    * @param {() => Promise<unknown>} command
    * @param {(reason: string) => void} [explain]
-   * @returns {Promise<boolean>} whether the command went through
+   * @returns {Promise<'done' | 'refused' | 'failed'>}
    */
   async function run(command, explain = showMessage) {
     showMessage('');
-    let done = false;
+    /** @type {'done' | 'refused' | 'failed'} */
+    let outcome = 'done';
     try {
       await command();
-      done = true;
     } catch (error) {
       if (error instanceof Refused) {
+        outcome = 'refused';
         explain(error.message);
       } else {
+        outcome = 'failed';
         console.error(error);
         showMessage('Something went wrong. Please try again.');
       }
     }
     render();
-    return done;
+    return outcome;
   }
+
+  /**
+   * Handles a form's submit with its button switched off meanwhile, so that
+   * a second press of Enter cannot send the same command twice.
+   *
+   * @param {HTMLFormElement} form
+   * @param {() => Promise<void>} handle
+   */
+  function onSubmit(form, handle) {
+    /** @type {HTMLButtonElement} */
+    const button = find(form, 'button[type="submit"]');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      button.disabled = true;
+      try {
+        await handle();
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  // The "more" menu on each row. At most one is open at a time.
+
+  /** The row whose menu is open, if any. */
+  function rowWithOpenMenu() {
+    /** @type {HTMLElement | null} */
+    const menu = colleagueList.querySelector('.menu:not([hidden])');
+    return menu?.closest('.crow') ?? null;
+  }
+
+  function closeMenu() {
+    const row = rowWithOpenMenu();
+    if (!row) return;
+    find(row, '.menu').hidden = true;
+    find(row, '.more').setAttribute('aria-expanded', 'false');
+  }
+
+  /** @param {HTMLElement} row */
+  function toggleMenu(row) {
+    const wasOpen = row === rowWithOpenMenu();
+    closeMenu();
+    if (wasOpen) return;
+    const menu = find(row, '.menu');
+    menu.hidden = false;
+    find(row, '.more').setAttribute('aria-expanded', 'true');
+    find(menu, 'button').focus();
+  }
+
+  /** @param {EventTarget | null} target */
+  function isPartOfAMenu(target) {
+    return target instanceof Element && target.closest('.menu, .more') !== null;
+  }
+
+  // A click elsewhere, or the focus moving on to something else, closes the
+  // menu. Focus that goes nowhere is left to the click: some browsers do not
+  // focus a button when it is clicked, and closing here would hide the entry
+  // before the click reached it.
+  document.addEventListener('click', (event) => {
+    if (!isPartOfAMenu(event.target)) closeMenu();
+  });
+  colleagueList.addEventListener('focusout', (event) => {
+    if (event.relatedTarget && !isPartOfAMenu(event.relatedTarget)) closeMenu();
+  });
+
+  colleagueList.addEventListener('keydown', (event) => {
+    const row = rowWithOpenMenu();
+    if (!row) return;
+    if (event.key === 'Escape') {
+      // Focus goes back first, so that closing is not mistaken for leaving.
+      find(row, '.more').focus();
+      closeMenu();
+      event.preventDefault();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      const items = [...row.querySelectorAll('.menu button')];
+      const at = items.indexOf(/** @type {HTMLButtonElement} */ (document.activeElement));
+      const down = event.key === 'ArrowDown';
+      // From outside the entries, down goes to the first and up to the last.
+      const next = at === -1 ? (down ? 0 : items.length - 1) : at + (down ? 1 : -1);
+      /** @type {HTMLElement} */ (items[(next + items.length) % items.length]).focus();
+      event.preventDefault();
+    }
+  });
+
+  // The dialogs opened from the menu.
+
+  /** @param {string} colleagueId */
+  function aliasOf(colleagueId) {
+    return tracker.colleagues().find((colleague) => colleague.id === colleagueId)?.alias ?? '';
+  }
+
+  /** @param {string} colleagueId */
+  function openAliasDialog(colleagueId) {
+    dialogColleagueId = colleagueId;
+    changedAlias.fill(aliasOf(colleagueId));
+    aliasDialog.showModal();
+    changedAlias.input.focus();
+    changedAlias.input.select();
+  }
+
+  /** @param {string} reason why archiving was refused, or '' to clear it */
+  function explainArchive(reason) {
+    find(archiveRefusal, 'span').textContent = reason;
+    archiveRefusal.hidden = reason === '';
+  }
+
+  /** @param {string} colleagueId */
+  function openArchiveDialog(colleagueId) {
+    dialogColleagueId = colleagueId;
+    const alias = aliasOf(colleagueId);
+    archiveTitle.textContent = `Archive ${alias}?`;
+    archiveText.textContent = `${alias} leaves the colleagues panel, and their visits stay on the leaderboard. An archived colleague cannot be brought back.`;
+    explainArchive('');
+    archiveDialog.showModal();
+  }
+
+  // A dialog stays open only on a refusal, which it explains itself. If
+  // something else went wrong, it closes so that the message under the
+  // header can be seen.
+  onSubmit(find(aliasDialog, 'form'), async () => {
+    const outcome = await run(
+      () => tracker.renameColleague(dialogColleagueId, changedAlias.input.value),
+      changedAlias.explain,
+    );
+    if (outcome === 'refused') changedAlias.input.focus();
+    else aliasDialog.close();
+  });
+
+  onSubmit(find(archiveDialog, 'form'), async () => {
+    const outcome = await run(() => tracker.archiveColleague(dialogColleagueId), explainArchive);
+    if (outcome !== 'refused') archiveDialog.close();
+  });
+
+  for (const dialog of [aliasDialog, archiveDialog]) {
+    dialog.addEventListener('click', (event) => {
+      const target = /** @type {HTMLElement} */ (event.target);
+      if (target.closest('[data-action="close"]')) dialog.close();
+    });
+    // Back to the row the dialog was opened from, or to the add-colleague
+    // form if that row is gone because its colleague was archived.
+    dialog.addEventListener('close', () => {
+      const more = /** @type {HTMLElement | null | undefined} */ (
+        rowOf(dialogColleagueId)?.querySelector('.more')
+      );
+      (more ?? newColleagueAlias.input).focus();
+    });
+  }
+
+  // Commands from the rows and from the add-colleague form.
 
   colleagueList.addEventListener('click', async (event) => {
     const button = /** @type {HTMLElement} */ (event.target).closest('button');
-    const colleagueId = button?.dataset.colleagueId;
-    if (!button || !colleagueId) return;
-    const hadFocus = document.activeElement === button;
-    button.disabled = true;
-    await run(() =>
-      button.dataset.action === 'stop'
-        ? tracker.stopVisit(colleagueId)
-        : tracker.startVisit(colleagueId),
-    );
-    // Redrawing replaced the button, so hand the focus to its successor.
-    if (hadFocus) {
-      for (const next of colleagueList.querySelectorAll('button')) {
-        if (next.dataset.colleagueId === colleagueId) next.focus();
+    const row = /** @type {HTMLElement | null | undefined} */ (button?.closest('.crow'));
+    const colleagueId = row?.dataset.colleagueId;
+    if (!button || !row || !colleagueId) return;
+    const action = button.dataset.action;
+
+    if (action === 'menu') {
+      toggleMenu(row);
+    } else if (action === 'alias') {
+      closeMenu();
+      openAliasDialog(colleagueId);
+    } else if (action === 'archive') {
+      closeMenu();
+      openArchiveDialog(colleagueId);
+    } else if (action === 'start' || action === 'stop') {
+      const hadFocus = document.activeElement === button;
+      button.disabled = true;
+      await run(() =>
+        action === 'stop' ? tracker.stopVisit(colleagueId) : tracker.startVisit(colleagueId),
+      );
+      // Redrawing replaced the button, so hand the focus to its successor.
+      if (hadFocus) {
+        /** @type {HTMLElement | null | undefined} */ (
+          rowOf(colleagueId)?.querySelector('.btn-timer')
+        )?.focus();
       }
     }
   });
 
-  addForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const alias = aliasInput.value;
-    aliasInput.value = '';
-    showAliasError('');
-    const added = await run(() => tracker.addColleague(alias), showAliasError);
-    // An alias that was not added goes back into the field to be corrected.
-    if (!added) aliasInput.value = alias;
-    aliasInput.focus();
+  onSubmit(addForm, async () => {
+    const outcome = await run(
+      () => tracker.addColleague(newColleagueAlias.input.value),
+      newColleagueAlias.explain,
+    );
+    // An alias that was not added stays in the field to be corrected.
+    if (outcome === 'done') newColleagueAlias.fill('');
+    newColleagueAlias.input.focus();
   });
-
-  aliasInput.addEventListener('input', () => showAliasError(''));
 
   render();
   setInterval(() => {

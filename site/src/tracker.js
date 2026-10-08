@@ -9,6 +9,19 @@
 /** A command the tracker refused; the message is fit to show the operator. */
 export class Refused extends Error {}
 
+/** The most characters an alias may have. */
+export const MAX_ALIAS_LENGTH = 30;
+
+/**
+ * How long an alias counts as being, as typed. Spaces around it do not
+ * count, and characters outside the basic plane, such as most emoji, count
+ * once each.
+ * @param {string} typed
+ */
+export function aliasLength(typed) {
+  return [...typed.trim()].length;
+}
+
 /**
  * The month a moment falls in, in the operator's local time, as "YYYY-MM".
  * @param {Date} moment
@@ -76,6 +89,39 @@ export async function createTracker({ clock, store }) {
     return colleague;
   }
 
+  /** @param {Colleague} colleague */
+  function refuseIfArchived(colleague) {
+    if (colleague.archivedAt) throw new Refused(`${colleague.alias} has been archived.`);
+  }
+
+  /**
+   * The alias as it will be kept, or a refusal if it breaks a rule.
+   * @param {string} typed
+   * @param {string} [ownerId] the colleague whose alias this will be, if they exist already
+   */
+  function acceptedAlias(typed, ownerId) {
+    const alias = typed.trim();
+    if (alias === '') throw new Refused('Type an alias for the colleague.');
+    if (aliasLength(alias) > MAX_ALIAS_LENGTH) {
+      throw new Refused(
+        `An alias can be at most ${MAX_ALIAS_LENGTH} characters. This one has ${aliasLength(alias)}.`,
+      );
+    }
+    // An archived colleague's alias is free for somebody else to take.
+    const taken = colleagues.some(
+      (colleague) =>
+        colleague.id !== ownerId &&
+        !colleague.archivedAt &&
+        colleague.alias.toLowerCase() === alias.toLowerCase(),
+    );
+    if (taken) {
+      throw new Refused(
+        `“${alias}” is already in use by another colleague. Choose a different alias.`,
+      );
+    }
+    return alias;
+  }
+
   // A visit can still be running from just before midnight on the last day,
   // so last month is loaded along with this one.
   const openedAt = clock.now();
@@ -85,10 +131,32 @@ export async function createTracker({ clock, store }) {
   return {
     /** @param {string} alias */
     async addColleague(alias) {
-      const colleague = { id: crypto.randomUUID(), alias };
+      const colleague = { id: crypto.randomUUID(), alias: acceptedAlias(alias), archivedAt: null };
       colleagues.push(colleague);
       await store.saveColleagues(colleagues);
       return { ...colleague };
+    },
+
+    /**
+     * @param {string} colleagueId
+     * @param {string} alias
+     */
+    async renameColleague(colleagueId, alias) {
+      const colleague = colleagueWith(colleagueId);
+      refuseIfArchived(colleague);
+      colleague.alias = acceptedAlias(alias, colleagueId);
+      await store.saveColleagues(colleagues);
+    },
+
+    /** @param {string} colleagueId */
+    async archiveColleague(colleagueId) {
+      const colleague = colleagueWith(colleagueId);
+      refuseIfArchived(colleague);
+      if (runningVisitOf(colleagueId)) {
+        throw new Refused(`${colleague.alias} is out. Stop their visit before archiving them.`);
+      }
+      colleague.archivedAt = toInstant(clock.now());
+      await store.saveColleagues(colleagues);
     },
 
     /** @param {string} colleagueId */
@@ -97,8 +165,10 @@ export async function createTracker({ clock, store }) {
       const now = clock.now();
       const month = monthOf(now);
       const visits = await visitsIn(month);
-      // Nothing may be awaited between this check and the push below, or two
-      // starts at the same moment would both pass it.
+      // Nothing may be awaited between these checks and the push below, or
+      // two starts at the same moment would both pass them, and so would a
+      // start at the moment the colleague is archived.
+      refuseIfArchived(colleague);
       if (runningVisitOf(colleagueId)) {
         throw new Refused(`${colleague.alias} is already out.`);
       }
@@ -121,34 +191,43 @@ export async function createTracker({ clock, store }) {
       await store.saveVisits(month, await visitsIn(month));
     },
 
-    /** The current month's leaderboard: most time first, with who is leading and who is out. */
+    /**
+     * The current month's leaderboard: most time first, with who is leading
+     * and who is out. It lists every active colleague, and an archived one
+     * only if they have a visit this month.
+     */
     leaderboard() {
       const now = clock.now();
       const nowInstant = toInstant(now);
       const visits = visitsByMonth.get(monthOf(now)) ?? [];
-      const rows = colleagues.map((colleague) => {
+      const rows = [];
+      for (const colleague of colleagues) {
+        const theirs = visits.filter((visit) => visit.colleagueId === colleague.id);
+        const archived = Boolean(colleague.archivedAt);
+        if (archived && theirs.length === 0) continue;
         let totalSeconds = 0;
-        for (const visit of visits) {
-          if (visit.colleagueId !== colleague.id) continue;
+        for (const visit of theirs) {
           totalSeconds += secondsBetween(visit.startedAt, visit.endedAt ?? nowInstant);
         }
-        return {
+        rows.push({
           colleagueId: colleague.id,
           alias: colleague.alias,
           totalSeconds,
           out: runningVisitOf(colleague.id) !== null,
-        };
-      });
+          archived,
+        });
+      }
       rows.sort((a, b) => b.totalSeconds - a.totalSeconds);
       // Whoever has the most time is leading, once anybody has any.
       const most = rows[0]?.totalSeconds ?? 0;
       return rows.map((row) => ({ ...row, leading: most > 0 && row.totalSeconds === most }));
     },
 
-    /** The colleagues in alias order, each with their running visit if they are out. */
+    /** The active colleagues in alias order, each with their running visit if they are out. */
     colleagues() {
       const now = toInstant(clock.now());
       return colleagues
+        .filter((colleague) => !colleague.archivedAt)
         .map((colleague) => {
           const running = runningVisitOf(colleague.id);
           return {
